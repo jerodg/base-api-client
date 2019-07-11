@@ -6,4 +6,3 @@ Date: 05-21-19
 
 # Base API Client
 Base module for REST client APIs.
-
