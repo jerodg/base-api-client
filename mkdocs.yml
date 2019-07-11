@@ -1,0 +1,32 @@
+copyright: Copyright © 2019. Jerod Gawne
+dev_addr: 0.0.0.0:8080
+google_analytics: null
+markdown_extensions:
+  - smarty:
+      smart_quotes: False
+      smart_angled_quotes: True
+  - pymdownx.tasklist
+  - pymdownx.smartsymbols
+  - pymdownx.details
+  - toc:
+      permalink: True
+nav:
+  - About: 'index.md'
+#  - Location: 'location.md'
+#  - Installation: 'install.md'
+#  - Usage: 'use.md'
+#  - Test: 'test.md'
+remote_branch: gh-pages
+remote_name: origin
+repo_url:
+repo_name: GitHub
+site_author: Jerod Gawne
+site_description: Base Client API
+site_name: Base API Client
+site_url:
+strict: true
+theme:
+  name: material
+  palette:
+    primary: 'indigo'
+    accent: 'green'
