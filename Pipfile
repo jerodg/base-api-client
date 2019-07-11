@@ -12,6 +12,7 @@ pytest = "*"
 pytest-asyncio = "*"
 pytest-cov = "*"
 setuptools = "*"
+twine = "*"
 wheel = "*"
 
 [packages]
@@ -21,4 +22,4 @@ cchardet = "*"
 ujson = "*"
 
 [requires]
-python_version = "3.7"
+python_version = "3.8"
