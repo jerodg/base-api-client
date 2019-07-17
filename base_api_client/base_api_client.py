@@ -12,6 +12,9 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 SSPL for more details.
 
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
 You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 import logging
@@ -20,9 +23,10 @@ from json.decoder import JSONDecodeError
 from typing import List, Optional, Union
 
 import aiohttp as aio
+import toml
 import ujson
 
-logger = logging.getLogger(__name__).addHandler(logging.NullHandler())
+logger = logging.getLogger(__name__)
 
 
 class BaseApiClient(object):
@@ -32,9 +36,10 @@ class BaseApiClient(object):
         self.sem: Semaphore = Semaphore(sem or self.SEM)
         if type(cfg) is dict:
             self.cfg = cfg
-        else:
-            pass
-            # todo: read toml/json config file
+        elif type(cfg) is str:
+            self.cfg = toml.load(cfg)
+        elif cfg is None:
+            self.cfg = {}
 
     def __enter__(self):
         return self

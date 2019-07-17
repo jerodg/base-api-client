@@ -33,6 +33,10 @@ class SomeApiClient(BaseApiClient):
         BaseApiClient.__exit__(self, exc_type, exc_val, exc_tb)
 ```
 
+## Documentation
+[GitHub Pages](https://jerodg.github.io/base-api-client/)
+- Work in Process
+
 ## License
 
 Copyright © 2019 Jerod Gawne <https://github.com/jerodg/>

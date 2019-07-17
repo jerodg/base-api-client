@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData">
+  <component name="PublishConfigData" autoUpload="Always" serverName="dev-prod: base-api-client">
     <serverData>
       <paths name="53.Phantom">
         <serverdata>
@@ -156,6 +156,24 @@
           </mappings>
         </serverdata>
       </paths>
+      <paths name="dev-prod: base-api-client">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/infosecintegration/sea/base-api-client" local="$PROJECT_DIR$" />
+          </mappings>
+          <excludedPaths>
+            <excludedPath path="/home/infosecintegration/sea/base-api-client/.venv" />
+          </excludedPaths>
+        </serverdata>
+      </paths>
+      <paths name="dev-prod: bricata-api-client">
+        <serverdata>
+          <mappings>
+            <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
     </serverData>
+    <option name="myAutoUpload" value="ALWAYS" />
   </component>
 </project>

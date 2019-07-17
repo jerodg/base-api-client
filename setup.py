@@ -20,7 +20,6 @@ from typing import NoReturn
 from setuptools import find_packages, setup
 
 logger = logging.getLogger(__name__)
-name = 'base-api-client'
 
 
 def readme() -> str:
@@ -30,16 +29,16 @@ def readme() -> str:
 
 def main() -> NoReturn:
     setup(name='base-api-client',
-          version='1.0.0',
+          version='0!1.0b1.dev2',
           description='Base API Client Library',
           long_description=readme(),
           long_description_content_type='text/markdown',
-          classifiers=['Development Status :: 5 - Production/Stable',
+          classifiers=['Development Status :: 4 - Beta',
                        'Environment :: Console',
                        'Intended Audience :: End Users/Desktop',
                        'Intended Audience :: Developers',
                        'Intended Audience :: System Administrators',
-                       'License :: Server Side Public License (SSPL)',
+                       'License :: Other/Proprietary License',
                        'Natural Language :: English',
                        'Operating System :: MacOS :: MacOS X',
                        'Operating System :: Microsoft :: Windows',
@@ -66,7 +65,7 @@ def main() -> NoReturn:
           tests_require=['pytest', 'pytest-asyncio'],
           scripts=[],
           entry_points={'console_scripts': []},
-          python_requires='~=3.8',
+          python_requires='~=3.6',
           project_urls={'Documentation': 'https://jerodg.github.io/base-api-client',
                         'Source':        'https://github.com/jerodg/base-api-client',
                         'Bugs':          'https://github.com/jerodg/base-api-client/issues'},

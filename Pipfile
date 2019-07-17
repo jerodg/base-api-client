@@ -19,6 +19,7 @@ wheel = "*"
 aiodns = "*"
 aiohttp = "*"
 cchardet = "*"
+toml = "*"
 ujson = "*"
 
 [requires]
