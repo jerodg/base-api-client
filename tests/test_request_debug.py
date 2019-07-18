@@ -1,5 +1,5 @@
 #!/usr/bin/env python3.8
-"""Base API Client: Test Process Params
+"""Base API Client: Test Request Debug
 Copyright © 2019 Jerod Gawne <https://github.com/jerodg/>
 
 This program is free software: you can redistribute it and/or modify
@@ -19,31 +19,27 @@ You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 import time
 
+import aiohttp as aio
 import pytest
+from os import getenv
 
-from base_api_client.base_api_client import BaseApiClient
-from base_api_client.base_api_utils import bprint
+from base_api_client.base_client import BaseApiClient
+from base_api_client.base_utils import bprint
 
 
 @pytest.mark.asyncio
-async def test_process_params():
+async def test_request_debug():
     ts = time.perf_counter()
-    bprint('Test: Process Params')
+    bprint('Test: Request Debug')
 
     with BaseApiClient() as bapi:
-        params = {'key0': 'value0', 'key1': None}
+        async with aio.ClientSession() as session:
+            response = await session.get('https://pypi.org', proxy=getenv('PROXY'))
 
-        results = bapi.process_params(**params)
+        results = await bapi.request_debug(response=response)
 
-        assert type(results) is dict
+        assert type(results) is str
 
-        try:
-            key1 = results['key1']
-        except KeyError:
-            key1 = 'None'
+        print('Results:\n', results)
 
-        assert key1 == 'None'
-
-        print('Results:', results)
-
-    bprint(f'-> Completed in {time.perf_counter() - ts} seconds.')
+    bprint(f'-> Completed in {(time.perf_counter() - ts):f} seconds.')

@@ -6,12 +6,15 @@ name = 'pypi'
 [dev-packages]
 better-exceptions = "*"
 mkdocs = "*"
+mkdocs-macros-plugin = "*"
 mkdocs-material = "*"
 pymdown-extensions = "*"
+pygments = "*"
 pytest = "*"
 pytest-asyncio = "*"
 pytest-cov = "*"
 setuptools = "*"
+toml = "*"
 twine = "*"
 wheel = "*"
 

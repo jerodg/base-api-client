@@ -21,11 +21,11 @@ import time
 
 import pytest
 
-from base_api_client.base_api_utils import bprint
+from base_api_client.base_utils import bprint
 
 
 @pytest.mark.asyncio
 async def test_request_debug():
     ts = time.perf_counter()
     bprint('Test: Banner Print')
-    bprint(f'-> Completed in {time.perf_counter() - ts} seconds.')
+    bprint(f'-> Completed in {(time.perf_counter() - ts):f} seconds.')

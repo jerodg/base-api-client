@@ -1,5 +1,5 @@
 #!/usr/bin/env python3.8
-"""Base API Client: Test Request Debug
+"""Base API Client: Models.Results
 Copyright © 2019 Jerod Gawne <https://github.com/jerodg/>
 
 This program is free software: you can redistribute it and/or modify
@@ -17,31 +17,25 @@ copies or substantial portions of the Software.
 
 You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
-import time
+
+import logging
+from dataclasses import dataclass, field
+from typing import List, NoReturn, Union
 
 import aiohttp as aio
-import pytest
-from os import environ
 
-from base_api_client.base_api_client import BaseApiClient
-from base_api_client.base_api_utils import bprint
+logger = logging.getLogger(__name__)
 
 
-@pytest.mark.asyncio
-async def test_request_debug():
-    ts = time.perf_counter()
-    bprint('Test: Request Debug')
+@dataclass
+class Results:
+    results: List[Union[dict, aio.ClientResponse]]
+    success: list = field(default_factory=list)
+    failure: list = field(default_factory=list)
 
-    environ['HTTPS_PROXY'] = 'http://webgateway.info53.com:8080'
+    def cleanup(self) -> NoReturn:
+        del self.results
 
-    with BaseApiClient() as bapi:
-        async with aio.ClientSession(trust_env=True) as session:
-            response = await session.get('https://pypi.org')
-
-        results = await bapi.request_debug(response=response)
-
-        assert type(results) is str
-
-        print(results)
-
-    bprint(f'-> Completed in {time.perf_counter() - ts} seconds.')
+    @property
+    def dict(self):
+        return {'success': self.success, 'failure': self.failure}

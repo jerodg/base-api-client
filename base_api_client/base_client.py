@@ -26,6 +26,8 @@ import aiohttp as aio
 import toml
 import ujson
 
+from base_api_client.models.results import Results
+
 logger = logging.getLogger(__name__)
 
 
@@ -49,46 +51,43 @@ class BaseApiClient(object):
 
     @staticmethod
     async def request_debug(response: aio.ClientResponse) -> str:
+        # todo: convert to template
         """Pretty Print Request-Response"""
         hdr = '\n\t\t'.join(f'{k}: {v}' for k, v in response.headers.items())
         try:
             j = ujson.dumps(await response.json(content_type=None))
+            t = None
         except JSONDecodeError:
-            j = await response.text()
+            j = None
+            t = await response.text()
 
         return f'\nHTTP/{response.version.major}.{response.version.minor}, {response.method}-{response.status}[{response.reason}]' \
             f'\n\tRequest-URL: \n\t\t{response.url}\n' \
             f'\n\tHeader: \n\t\t{hdr}\n' \
-            f'\n\tResponse-JSON: \n\t\t{j}\n'
+            f'\n\tResponse-JSON: \n\t\t{j}\n' \
+            f'\n\tResponse-TEXT: \n\t\t{t}\n'
 
-    async def process_results(self, results: List[Union[dict, aio.ClientResponse]], data: Optional[str] = None) -> dict:
-        ret = {'success': [], 'failure': []}
+    async def process_results(self, results: List[Union[dict, aio.ClientResponse]], data: Optional[str] = None) -> Results:
+        res = Results(results)
 
-        for result in results:
-            if type(result) is aio.ClientResponse:
-                logger.error(await self.request_debug(result))
-                ret['failure'].append(await result.json(content_type=None))
-            elif result is False:
-                ret['failure'].append({})
+        for r in res.results:
+            if type(r) is aio.ClientResponse:  # failure
+                logger.error(await self.request_debug(r))
+                res.failure.append(await r.json(content_type=None, encoding='utf-8', loads=ujson.loads()))
             else:
                 if data:
-                    ret['success'].extend(result[data])
-                elif type(result) is list:
-                    ret['success'].extend(result)
+                    res.success.extend(r[data])
+                elif type(r) is list:
+                    res.success.extend(r)
                 else:
-                    ret['success'].append(result)
+                    res.success.append(r)
 
-        if not ret['success']:
-            ret['success'].append(None)
-
-        if not ret['failure']:
-            ret['failure'].append(None)
-
-        return ret
+        res.cleanup()
+        return res
 
     @staticmethod
-    def process_params(**kwargs) -> dict:
-        return {k: v for k, v in kwargs.items() if v is not None or v != ''}
+    def process_params(kwargs) -> dict:
+        return {k: v for k, v in kwargs.items() if v is not None}
 
 
 if __name__ == '__main__':

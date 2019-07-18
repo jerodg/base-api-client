@@ -1,5 +1,5 @@
 #!/usr/bin/env python3.8
-"""Base API Client: Test Process Results
+"""Base API Client: Test Process Params
 Copyright © 2019 Jerod Gawne <https://github.com/jerodg/>
 
 This program is free software: you can redistribute it and/or modify
@@ -21,37 +21,29 @@ import time
 
 import pytest
 
-from base_api_client.base_api_client import BaseApiClient
-from base_api_client.base_api_utils import bprint
+from base_api_client.base_client import BaseApiClient
+from base_api_client.base_utils import bprint
 
 
 @pytest.mark.asyncio
-async def test_process_results():
+async def test_process_params():
     ts = time.perf_counter()
-    bprint('Test: Process Results')
+    bprint('Test: Process Params')
 
     with BaseApiClient() as bapi:
-        raw_results = [{'key0': 'value0',
-                        'key1': 'value1',
-                        'data': [{'some_key': 'some_value', 'another_key': 'another_value'},
-                                 {'some_key': 'some_value', 'another_key': 'another_value'}]}]
+        params = {'key0': 'value0', 'key1': None}
 
-        results = await bapi.process_results(results=raw_results)
+        results = bapi.process_params(params)
+        print('Results:\n', results)
 
         assert type(results) is dict
-        assert results['success'] is not None
-        assert results['failure'][0] is None
 
         try:
-            key0 = results['success'][0]['key0']
+            key1 = results['key1']
         except KeyError:
-            key0 = 'None'
+            key1 = 'None'
 
-        assert key0 == 'value0'
+        assert key1 == 'None'
+        print('Results:\n', results)
 
-        print('Top 5 Success Results:')
-        print(*results['success'][:5], sep='\n')
-        print('\nTop 5 Failure Result:')
-        print(*results['failure'][:5], sep='\n')
-
-    bprint(f'-> Completed in {time.perf_counter() - ts} seconds.')
+    bprint(f'-> Completed in {(time.perf_counter() - ts):f} seconds.')

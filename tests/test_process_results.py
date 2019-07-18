@@ -1,5 +1,5 @@
 #!/usr/bin/env python3.8
-"""Base API Client: Test Process Results List
+"""Base API Client: Test Process Results
 Copyright © 2019 Jerod Gawne <https://github.com/jerodg/>
 
 This program is free software: you can redistribute it and/or modify
@@ -21,38 +21,31 @@ import time
 
 import pytest
 
-from base_api_client.base_api_client import BaseApiClient
-from base_api_client.base_api_utils import bprint
+from base_api_client import bprint, tprint
+from base_api_client.base_client import BaseApiClient
+from base_api_client.models.results import Results
 
 
 @pytest.mark.asyncio
-async def test_process_results_list():
+async def test_process_results():
     ts = time.perf_counter()
-    bprint('Test: Process Results List')
 
-    with BaseApiClient() as bapi:
+    with BaseApiClient() as bac:
         raw_results = [{'key0': 'value0',
                         'key1': 'value1',
                         'data': [{'some_key': 'some_value', 'another_key': 'another_value'},
                                  {'some_key': 'some_value', 'another_key': 'another_value'}]}]
 
-        results = await bapi.process_results(results=raw_results, data='data')
-        # print(f'Results: {results}')
+        bprint('Test: Process Results')
+        results = await bac.process_results(results=raw_results)
+        tprint(results)
 
-        assert type(results) is dict
-        assert results['success'] is not None
-        assert results['failure'][0] is None
+        assert type(results) is Results
+        assert results.success is not None
+        assert not results.failure
 
-        try:
-            key0 = results['success'][0]['key0']
-        except KeyError:
-            key0 = 'None'
+        bprint('Test: Process Results (Data List)')
+        results = await bac.process_results(results=raw_results, data='data')
+        tprint(results)
 
-        assert key0 == 'None'
-
-        print('Top 5 Success Results:')
-        print(*results['success'][:5], sep='\n')
-        print('\nTop 5 Failure Result:')
-        print(*results['failure'][:5], sep='\n')
-
-    bprint(f'-> Completed in {time.perf_counter() - ts} seconds.')
+    bprint(f'-> Completed in {(time.perf_counter() - ts):f} seconds.')
