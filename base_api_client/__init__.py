@@ -20,5 +20,6 @@ If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 
 from base_api_client.base_client import BaseApiClient
 from base_api_client.base_utils import bprint, tprint
+from base_api_client.models.results import Results
 
-___all___ = ['BaseApiClient', 'bprint', 'tprint']
+___all___ = ['BaseApiClient', 'bprint', 'tprint', 'Results']

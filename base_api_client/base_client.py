@@ -26,7 +26,7 @@ import aiohttp as aio
 import toml
 import ujson
 
-from base_api_client.models.results import Results
+from base_api_client import Results
 
 logger = logging.getLogger(__name__)
 

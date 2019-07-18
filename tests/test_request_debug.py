@@ -23,8 +23,7 @@ import aiohttp as aio
 import pytest
 from os import getenv
 
-from base_api_client.base_client import BaseApiClient
-from base_api_client.base_utils import bprint
+from base_api_client import BaseApiClient, bprint
 
 
 @pytest.mark.asyncio

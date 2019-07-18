@@ -21,7 +21,7 @@ import time
 
 import pytest
 
-from base_api_client.base_utils import bprint
+from base_api_client import bprint
 
 
 @pytest.mark.asyncio
