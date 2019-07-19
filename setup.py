@@ -29,7 +29,7 @@ def readme() -> str:
 
 def main() -> NoReturn:
     setup(name='base-api-client',
-          version='0!1.0b2.dev2',
+          version='0!1.0b4.dev1',
           description='Base API Client Library',
           long_description=readme(),
           long_description_content_type='text/markdown',
@@ -52,7 +52,7 @@ def main() -> NoReturn:
           license='Server Side Public License (SSPL)',
           packages=find_packages(exclude=['docs', 'examples', 'tests']),
           python_requires='>=3.6, <3.9',
-          install_requires=['aiodns', 'aiohttp', 'cchardet', 'toml', 'ujson'],
+          install_requires=['aiodns', 'aiohttp', 'cchardet', 'tenacity', 'toml', 'ujson'],
           extras_require={'dev':  [],
                           'test': []},
           package_data={'base-api-client': []},

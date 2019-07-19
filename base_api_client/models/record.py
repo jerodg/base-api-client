@@ -1,5 +1,5 @@
 #!/usr/bin/env python3.8
-"""Base API Client: Utils
+"""Base API Client: Models.Record
 Copyright © 2019 Jerod Gawne <https://github.com/jerodg/>
 
 This program is free software: you can redistribute it and/or modify
@@ -17,30 +17,23 @@ copies or substantial portions of the Software.
 
 You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
-from typing import NoReturn, Optional, Union
+
+import logging
+from dataclasses import dataclass
+
+logger = logging.getLogger(__name__)
 
 
-def bprint(message) -> NoReturn:
-    msg = f'\n▃▅▇█▓▒░۩۞۩ {message.center(58)} ۩۞۩░▒▓█▇▅▃\n'
-    print(msg)
+@dataclass
+class Record:
+    """Generic Record
 
+    Takes a dict and converts it to a dataclass.
+    """
 
-def tprint(results, top: Optional[Union[int, None]] = None) -> NoReturn:
-    # todo: sub banner for this?
-    top_hdr = f'Top {top} ' if top else ''
+    def __init__(self, **entries):
+        self.__dict__.update(entries)
 
-    print(f'\n{top_hdr}Success Result{"s" if len(results.success) > 1 else ""}:')
-    if top:
-        print(*results.success[:top], sep='\n')
-    else:
-        print(*results.success, sep='\n')
-
-    print(f'\n{top_hdr}Failure Result{"s" if len(results.failure) > 1 else ""}:')
-    if top:
-        print(*results.failure[:top], sep='\n')
-    else:
-        print(*results.failure, sep='\n')
-
-
-if __name__ == '__main__':
-    print(__doc__)
+    @property
+    def dict(self):
+        return {k: v for k, v in self.__dict__.items() if v is not None}
