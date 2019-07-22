@@ -17,6 +17,7 @@ copies or substantial portions of the Software.
 
 You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
+
 import logging
 from asyncio import Semaphore
 from json.decoder import JSONDecodeError
@@ -34,9 +35,6 @@ from base_api_client.models import Results
 logger = logging.getLogger(__name__)
 
 
-# todo: test request(); all types
-
-
 class BaseApiClient(object):
     HDR: dict = {'Content-Type': 'application/json; charset=utf-8'}
     SEM: int = 25  # This defines the number of parallel async requests to make.
@@ -51,14 +49,20 @@ class BaseApiClient(object):
         if type(cfg) is dict:
             self.cfg = cfg
         elif type(cfg) is str:
-            self.cfg = toml.load(cfg)
+            if cfg.endswith('.toml'):
+                self.cfg = toml.load(cfg)
+            elif cfg.endswith('.json'):
+                self.cfg = ujson.loads(open(cfg).read(), ensure_ascii=False)
+            else:
+                logger.error(f'Unknown configuration file type: {cfg.split(".")[1]}\n-> Valid Types: .toml | .json')
+                raise NotImplementedError
         elif cfg is None:
             self.cfg = {}
 
-    def __enter__(self):
+    async def __aenter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
         pass
 
     def load_config(self) -> NoReturn:
@@ -81,7 +85,7 @@ class BaseApiClient(object):
         # todo: convert to template
         hdr = '\n\t\t'.join(f'{k}: {v}' for k, v in response.headers.items())
         try:
-            j = ujson.dumps(await response.json(content_type=None))
+            j = ujson.dumps(await response.json(content_type=None), ensure_ascii=False)
             t = None
         except JSONDecodeError:
             j = None
@@ -135,7 +139,6 @@ class BaseApiClient(object):
         Raises:
             NotImplementedError
         """
-
         async with self.sem:
             if method == 'get':
                 response = await session.get(url=f'{self.cfg["URI"]["Base"]}/{end_point}',
@@ -151,6 +154,22 @@ class BaseApiClient(object):
                                               data=data,
                                               json=json,
                                               params=params)
+            elif method == 'put':
+                response = await session.put(url=f'{self.cfg["URI"]["Base"]}/{end_point}',
+                                             ssl=self.ssl,
+                                             proxy=self.proxy,
+                                             proxy_auth=self.proxy_auth,
+                                             data=data,
+                                             json=json,
+                                             params=params)
+            elif method == 'delete':
+                response = await session.delete(url=f'{self.cfg["URI"]["Base"]}/{end_point}',
+                                                ssl=self.ssl,
+                                                proxy=self.proxy,
+                                                proxy_auth=self.proxy_auth,
+                                                data=data,
+                                                json=json,
+                                                params=params)
             else:
                 raise NotImplementedError
 
