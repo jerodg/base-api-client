@@ -16,21 +16,53 @@
 
 #You should have received a copy of the SSPL along with this program.
 #If not, see <https://www.mongodb.com/licensing/server-side-public-license>.
-
-language: python
+language: python            # this works for Linux but is an error on macOS or Windows
 
 matrix:
   include:
-    - python: 3.6
-      env: TOXENV=py36
-    - python: 3.7
-      env: TOXENV=py38
-    - python: 3.8
-      env: TOXENV=py38
+    - name: "Python 3.7.x on Xenial Linux"
+      python: 3.7           # this works for Linux but is ignored on macOS or Windows
+      dist: xenial          # required for Python >= 3.7
+      before_install:
+        - python -m pip install --upgrade pip pipenv
 
-install: pip install tox
+    - name: "Python 3.7.x on macOS"
+      os: osx
+      osx_image: xcode10.2  # Python 3.7.2 running on macOS 10.14.3
+      language: shell       # 'language: python' is an error on Travis CI macOS
+      before_install:
+        - python -m pip install --upgrade pip pipenv
 
-script: tox
+    - name: "Python 3.7.x on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python
+        - python -m pip install --upgrade pip pipenv
+      env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
 
-notifications:
-  email: false
+install: pipenv install --dev  # all three OSes agree about 'pip3'
+# 'python' points to Python 2.7 on macOS but points to Python 3.7 on Linux and Windows
+# 'python3' is a 'command not found' error on Windows but 'py' works on Windows only
+
+script: pytest
+
+
+
+
+#language: python
+#matrix:
+#  include:
+#    - dist: xenial  # required for Python >= 3.7
+#    - python:
+#        "3.7"
+#        "3.8-dev"
+#
+#install:
+#  - pip install pipenv
+#  - pipenv install --dev
+#
+#script: pytest
+#
+#notifications:
+#  email: false

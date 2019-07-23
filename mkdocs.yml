@@ -2,7 +2,6 @@ copyright: Copyright © 2019. Jerod Gawne
 dev_addr: 0.0.0.0:8080
 google_analytics: null
 markdown_extensions:
-  - smarty
   - pymdownx.superfences
   - pymdownx.betterem
   - pymdownx.extra
@@ -16,8 +15,11 @@ markdown_extensions:
   - pymdownx.mark
   - pymdownx.progressbar
   - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      check_paths: True
   - pymdownx.tasklist
   - pymdownx.tilde
+  - smarty
   - toc:
       permalink: True
   - footnotes
@@ -30,7 +32,6 @@ nav:
 plugins:
   - search:
       lang: en
-  - git-revision-date
   - macros
 remote_branch: gh-pages
 remote_name: origin

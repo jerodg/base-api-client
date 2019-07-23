@@ -29,14 +29,14 @@ def readme() -> str:
 
 def main() -> NoReturn:
     setup(name='base-api-client',
-          version='0!1.0b5.dev1',
+          version='0!0.5.5',
           description='Base API Client Library',
           long_description=readme(),
           long_description_content_type='text/markdown',
           url='https://pypi.org/project/base-api-client/',
           author='Jerod Gawne',
           author_email='jerod@jerodg.dev',
-          classifiers=['Development Status :: 4 - Beta',
+          classifiers=['Development Status :: 5 - Production/Stable',
                        'Intended Audience :: Developers',
                        'Topic :: Utilities',
                        'Topic :: Internet :: WWW/HTTP',

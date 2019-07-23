@@ -20,17 +20,18 @@ pip install base-api-client
 This modules' primary use-case is inheritance from other REST API clients.
 
 ```python
-from base_api_client.base_api_client import BaseApiClient
+from base_api_client import BaseApiClient
+from typing import Optional, Union
 
 class SomeApiClient(BaseApiClient):
-    def __init__(self):
-        BaseApiClient.__init__()
+    def __init__(self, cfg: Union[str, dict], sem: Optional[int] = None):
+        BaseApiClient.__init__(self, cfg=cfg, sem=sem or self.SEM)
         
-    def __enter__(self):
+    def __aenter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        BaseApiClient.__exit__(self, exc_type, exc_val, exc_tb)
+    def __aexit__(self, exc_type, exc_val, exc_tb):
+        await BaseApiClient.__aexit__(self, exc_type, exc_val, exc_tb)
 ```
 
 ## Documentation
