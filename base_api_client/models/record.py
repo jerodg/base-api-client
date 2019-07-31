@@ -32,8 +32,7 @@ class Record:
         """Populates dataclass"""
         self.__dict__.update(entries)
 
-    @property
-    def dict(self, d: dict = None, sort_order: str = None, cleanup: bool = False) -> dict:
+    def dict(self, d: dict = None, sort_order: str = None, cleanup: bool = True) -> dict:
         """
         Args:
             d (Optional[dict]):

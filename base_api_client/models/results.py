@@ -20,9 +20,7 @@ If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 
 import logging
 from dataclasses import dataclass, field
-from typing import List, Union
-
-import aiohttp as aio
+from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -31,15 +29,13 @@ logger = logging.getLogger(__name__)
 class Results:
     """Results from aio.ClientRequest(s)
 
-    Processes, sorts, and removes empty keys (if requested).
-
     Attributes:
-        data (List[Union[dict, aio.ClientResponse]]):
+        data (List[dict]):
         success (List[dict]):
         failure (List[dict]):"""
-    data: List[Union[dict, aio.ClientResponse]]
-    success: list = field(default_factory=list)
-    failure: list = field(default_factory=list)
+    data: List[dict]
+    success: List[dict] = field(default_factory=list)
+    failure: List[dict] = field(default_factory=list)
 
     @property
     def dict(self) -> dict:

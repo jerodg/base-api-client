@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 class BaseApiClient(object):
     HDR: dict = {'Content-Type': 'application/json; charset=utf-8'}
-    SEM: int = 25  # This defines the number of parallel async requests to make.
+    SEM: int = 15  # This defines the number of parallel async requests to make.
 
     def __init__(self, cfg: Optional[Union[str, dict]] = None, sem: Optional[int] = None):
         self.sem: Semaphore = Semaphore(sem or self.SEM)
@@ -105,7 +105,7 @@ class BaseApiClient(object):
                f'\n\tResponse-JSON: \n\t\t{j}\n' \
                f'\n\tResponse-TEXT: \n\t\t{t}\n'
 
-    async def process_results(self, results: List[Union[dict, aio.ClientResponse]],
+    async def process_results(self, results: Results,
                               data_key: Optional[str] = None,
                               cleanup: bool = False,
                               sort_field: Optional[str] = None,
@@ -125,52 +125,66 @@ class BaseApiClient(object):
 
         Returns:
             res (Results): """
-        res = Results(data=results)
+        for result in results.data:
+            rid = {'request_id': result['request_id']}
+            status = result['response'].status
 
-        for r in res.data:
-            if type(r) is aio.ClientResponse:  # failure
-                try:
-                    res.failure.append(await r.json(content_type=None, encoding='utf-8', loads=ujson.loads()))
-                    logger.error(await self.request_debug(r))
-                except TypeError as te:
-                    logger.warning(te)
-                    res.failure.append(await r.text(encoding='utf-8'))
+            if result['response'].headers['Content-Type'].startswith('application/jwt'):
+                response = {'token': await result['response'].text(encoding='utf-8'), 'token_type': 'Bearer'}
+
+            elif result['response'].headers['Content-Type'].startswith('application/json'):
+                response = await result['response'].json(encoding='utf-8', loads=ujson.loads)
+
+            elif result['response'].headers['Content-Type'].startswith('text/javascript'):
+                response = await result['response'].json(encoding='utf-8', loads=ujson.loads, content_type='text/javascript')
+
+            elif result['response'].headers['Content-Type'].startswith('text/plain'):
+                response = {'text_plain': await result['response'].text(encoding='utf-8')}
+
+            elif result['response'].headers['Content-Type'].startswith('text/html'):
+                response = {'text_html': await result['response'].text(encoding='utf-8')}
+
             else:
+                logger.error(f'Content-Type: {result["response"].headers["Content-Type"]}, not currently handled.')
+                raise NotImplementedError
+
+            if status > 299:
+                results.failure.append({**response, **rid})
+            elif 200 <= status <= 299:
                 if data_key:
-                    res.success.extend(r[data_key])
-                elif type(r) is list:
-                    res.success.extend(r)
+                    results.success.extend([{**r, **rid} for r in response[data_key]])
                 else:
-                    res.success.append(r)
+                    results.success.append({**response, **rid})
 
         if cleanup:
-            del res.data
-            res.success = [dict(sorted({k: v for k, v in rec.items() if v is not None}.items())) for rec in res.success]
+            del results.data
+            results.success = [dict(sorted({k: v for k, v in rec.items() if v is not None}.items())) for rec in results.success]
 
         if sort_order:
             sort_order = sort_order.lower()
 
         if sort_field:
-            res.success.sort(key=lambda k: k[sort_field], reverse=True if sort_order == 'desc' else False)
+            results.success.sort(key=lambda k: k[sort_field], reverse=True if sort_order == 'desc' else False)
         elif sort_order:
-            res.success.sort(reverse=True if sort_order == 'desc' else False)
+            results.success.sort(reverse=True if sort_order == 'desc' else False)
 
-        return res
+        return results
 
     @retry(retry=retry_if_exception_type(aio.ClientError),
            wait=wait_random_exponential(multiplier=1.25, min=3, max=60),
            after=after_log(logger, logging.DEBUG),
            stop=stop_after_attempt(5),
            before_sleep=before_sleep_log(logger, logging.WARNING))
-    async def request(self, method: str, end_point: str, session: aio.ClientSession,
+    async def request(self, method: str, end_point: str, session: aio.ClientSession, request_id: str,
                       data: Optional[dict] = None,
                       json: Optional[dict] = None,
-                      params: Optional[Union[List[tuple], dict, MultiDict]] = None) -> Union[dict, aio.ClientResponse, str]:
+                      params: Optional[Union[List[tuple], dict, MultiDict]] = None) -> dict:
         """Multi-purpose aiohttp request function
         Args:
             method (str): A valid HTTP Verb in [GET, POST]
             end_point (str): REST Endpoint; e.g. /devices/query
             session (aio.ClientSession):
+            request_id (str): Unique Identifier used to associate request with response
             data (Optional[dict]):
             json (Optional[dict]):
             params (Optional[Union[List[tuple], dict, MultiDict]]):
@@ -213,28 +227,16 @@ class BaseApiClient(object):
                                                 json=json,
                                                 params=params)
             else:
+                logger.error(f'Request-Method: {method}, not currently handled.')
                 raise NotImplementedError
 
-            if 200 <= response.status <= 299:
-                if response.headers['Content-Type'].startswith('application/jwt'):
-                    return {'token': await response.text(encoding='utf-8'), 'token_type': 'Bearer'}
-                elif response.headers['Content-Type'].startswith('application/json'):
-                    return await response.json(encoding='utf-8', loads=ujson.loads)
-                elif response.headers['Content-Type'].startswith('text/javascript'):
-                    return await response.json(encoding='utf-8', loads=ujson.loads, content_type='text/javascript')
-                elif response.headers['Content-Type'].startswith('text/plain'):
-                    return await response.text(encoding='utf-8')
-                elif response.headers['Content-Type'].startswith('text/html'):
-                    return await response.text(encoding='utf-8')
-                else:
-                    logger.error(f'Content-Type: {response.headers["Content-Type"]}, not currently handled.')
-                    raise NotImplementedError
-            elif response.status == 502:
-                return response
-            elif response.status == 503:
+            try:
+                assert not response.status > 499
+            except AssertionError:
+                logger.error(self.request_debug(response))
                 raise aio.ClientError
-            else:
-                return response
+
+            return {'request_id': request_id, 'response': response}
 
 
 if __name__ == '__main__':
