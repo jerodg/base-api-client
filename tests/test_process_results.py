@@ -28,7 +28,7 @@ from base_api_client import BaseApiClient, bprint, Results, tprint
 async def test_process_results():
     ts = time.perf_counter()
 
-    with BaseApiClient() as bac:
+    async with BaseApiClient() as bac:
         raw_results = [{'key0': 'value0',
                         'key1': 'value1',
                         'data': [{'some_key': 'some_value', 'another_key': 'another_value'},
@@ -43,7 +43,7 @@ async def test_process_results():
         assert not results.failure
 
         bprint('Test: Process Results (Data List)')
-        results = await bac.process_results(results=raw_results, data='data')
+        results = await bac.process_results(results=raw_results, data_key='data')
         tprint(results)
 
     bprint(f'-> Completed in {(time.perf_counter() - ts):f} seconds.')

@@ -44,8 +44,19 @@ class BaseApiClient(object):
         self.header: Union[dict, None] = None
         self.proxy: Union[str, None] = None
         self.proxy_auth: Union[aio.BasicAuth, None] = None
-        self.ssl: Union[str, None] = None
+        self.ssl = None
+        self.auth = None
+        self.cfg: Union[dict, None] = None
 
+        self.__load_config(cfg=cfg)
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+    def __load_config(self, cfg) -> NoReturn:
         if type(cfg) is dict:
             self.cfg = cfg
         elif type(cfg) is str:
@@ -57,28 +68,25 @@ class BaseApiClient(object):
                 logger.error(f'Unknown configuration file type: {cfg.split(".")[1]}\n-> Valid Types: .toml | .json')
                 raise NotImplementedError
         elif cfg is None:
-            self.cfg = {}
+            self.cfg = None
 
-    async def __aenter__(self):
-        return self
+        if self.cfg:
+            proxy_uri = self.cfg['Proxy'].pop('URI', None)
+            if proxy_uri:
+                proxy_port = self.cfg['Proxy'].pop('Port')
+                proxy_user = self.cfg['Proxy'].pop('Username')
+                proxy_pass = self.cfg['Proxy'].pop('Password')
+                self.proxy = f'{proxy_uri}:{proxy_port}'
+                self.proxy_auth = aio.BasicAuth(login=proxy_user, password=proxy_pass)
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+            ssl_path = self.cfg['Options'].pop('CAPath', None)
+            if ssl_path:
+                self.ssl = create_default_context(purpose=Purpose.CLIENT_AUTH, capath=ssl_path)
+            else:
+                self.ssl = self.cfg['Options'].pop('VerifySSL', True)
 
-    def load_config(self) -> NoReturn:
-        proxy_uri = self.cfg['Proxy'].pop('URI', None)
-        if proxy_uri:
-            proxy_port = self.cfg['Proxy'].pop('Port')
-            proxy_user = self.cfg['Proxy'].pop('Username')
-            proxy_pass = self.cfg['Proxy'].pop('Password')
-            self.proxy = f'{proxy_uri}:{proxy_port}'
-            self.proxy_auth = aio.BasicAuth(login=proxy_user, password=proxy_pass)
-
-        ssl_path = self.cfg['Options'].pop('CAPath', None)
-        if ssl_path:
-            self.ssl = create_default_context(purpose=Purpose.CLIENT_AUTH, capath=ssl_path)
-        else:
-            self.ssl = self.cfg['Options'].pop('VerifySSL', True)
+            if self.cfg['Auth']:
+                self.auth = aio.BasicAuth(login=self.cfg['Auth']['Username'], password=self.cfg['Auth']['Password'])
 
     @staticmethod
     async def request_debug(response: aio.ClientResponse) -> str:
@@ -92,27 +100,61 @@ class BaseApiClient(object):
             t = await response.text()
 
         return f'\nHTTP/{response.version.major}.{response.version.minor}, {response.method}-{response.status}[{response.reason}]' \
-            f'\n\tRequest-URL: \n\t\t{response.url}\n' \
-            f'\n\tHeader: \n\t\t{hdr}\n' \
-            f'\n\tResponse-JSON: \n\t\t{j}\n' \
-            f'\n\tResponse-TEXT: \n\t\t{t}\n'
+               f'\n\tRequest-URL: \n\t\t{response.url}\n' \
+               f'\n\tHeader: \n\t\t{hdr}\n' \
+               f'\n\tResponse-JSON: \n\t\t{j}\n' \
+               f'\n\tResponse-TEXT: \n\t\t{t}\n'
 
-    async def process_results(self, results: List[Union[dict, aio.ClientResponse]], data: Optional[str] = None) -> Results:
-        res = Results(results)
+    async def process_results(self, results: List[Union[dict, aio.ClientResponse]],
+                              data_key: Optional[str] = None,
+                              cleanup: bool = False,
+                              sort_field: Optional[str] = None,
+                              sort_order: Optional[str] = None) -> Results:
+        """Process Results from aio.ClientRequest(s)
 
-        for r in res.results:
+        Args:
+        results (List[Union[dict, aio.ClientResponse]]):
+        success (List[dict]):
+        failure (List[dict]):
+        data_key (Optional[str]):
+        cleanup (Optional[bool]): Default: True
+            Removes raw results, Removes empty (None) keys, and Sorts Keys of each record.
+        sort_field (Optional[str]): Top level dictionary key to sort on
+        sort_order (Optional[str]): Direction to sort ASC | DESC (any case)
+            Performs generic sort if sort_field not specified.
+
+        Returns:
+            res (Results): """
+        res = Results(data=results)
+
+        for r in res.data:
             if type(r) is aio.ClientResponse:  # failure
-                logger.error(await self.request_debug(r))
-                res.failure.append(await r.json(content_type=None, encoding='utf-8', loads=ujson.loads()))
+                try:
+                    res.failure.append(await r.json(content_type=None, encoding='utf-8', loads=ujson.loads()))
+                    logger.error(await self.request_debug(r))
+                except TypeError as te:
+                    logger.warning(te)
+                    res.failure.append(await r.text(encoding='utf-8'))
             else:
-                if data:
-                    res.success.extend(r[data])
+                if data_key:
+                    res.success.extend(r[data_key])
                 elif type(r) is list:
                     res.success.extend(r)
                 else:
                     res.success.append(r)
 
-        res.cleanup()
+        if cleanup:
+            del res.data
+            res.success = [dict(sorted({k: v for k, v in rec.items() if v is not None}.items())) for rec in res.success]
+
+        if sort_order:
+            sort_order = sort_order.lower()
+
+        if sort_field:
+            res.success.sort(key=lambda k: k[sort_field], reverse=True if sort_order == 'desc' else False)
+        elif sort_order:
+            res.success.sort(reverse=True if sort_order == 'desc' else False)
+
         return res
 
     @retry(retry=retry_if_exception_type(aio.ClientError),
@@ -141,13 +183,13 @@ class BaseApiClient(object):
         """
         async with self.sem:
             if method == 'get':
-                response = await session.get(url=f'{self.cfg["URI"]["Base"]}/{end_point}',
+                response = await session.get(url=f'{self.cfg["URI"]["Base"]}{end_point}',
                                              ssl=self.ssl,
                                              proxy=self.proxy,
                                              proxy_auth=self.proxy_auth,
                                              params=params)
             elif method == 'post':
-                response = await session.post(url=f'{self.cfg["URI"]["Base"]}/{end_point}',
+                response = await session.post(url=f'{self.cfg["URI"]["Base"]}{end_point}',
                                               ssl=self.ssl,
                                               proxy=self.proxy,
                                               proxy_auth=self.proxy_auth,
@@ -155,7 +197,7 @@ class BaseApiClient(object):
                                               json=json,
                                               params=params)
             elif method == 'put':
-                response = await session.put(url=f'{self.cfg["URI"]["Base"]}/{end_point}',
+                response = await session.put(url=f'{self.cfg["URI"]["Base"]}{end_point}',
                                              ssl=self.ssl,
                                              proxy=self.proxy,
                                              proxy_auth=self.proxy_auth,
@@ -163,7 +205,7 @@ class BaseApiClient(object):
                                              json=json,
                                              params=params)
             elif method == 'delete':
-                response = await session.delete(url=f'{self.cfg["URI"]["Base"]}/{end_point}',
+                response = await session.delete(url=f'{self.cfg["URI"]["Base"]}{end_point}',
                                                 ssl=self.ssl,
                                                 proxy=self.proxy,
                                                 proxy_auth=self.proxy_auth,
@@ -174,26 +216,25 @@ class BaseApiClient(object):
                 raise NotImplementedError
 
             if 200 <= response.status <= 299:
-                if response.headers['Content-Type'] == 'application/jwt':
+                if response.headers['Content-Type'].startswith('application/jwt'):
                     return {'token': await response.text(encoding='utf-8'), 'token_type': 'Bearer'}
-                elif response.headers['Content-Type'] == 'application/json':
+                elif response.headers['Content-Type'].startswith('application/json'):
                     return await response.json(encoding='utf-8', loads=ujson.loads)
-                elif response.headers['Content-Type'] == 'text/plain; charset=utf-8':
+                elif response.headers['Content-Type'].startswith('text/javascript'):
+                    return await response.json(encoding='utf-8', loads=ujson.loads, content_type='text/javascript')
+                elif response.headers['Content-Type'].startswith('text/plain'):
+                    return await response.text(encoding='utf-8')
+                elif response.headers['Content-Type'].startswith('text/html'):
                     return await response.text(encoding='utf-8')
                 else:
                     logger.error(f'Content-Type: {response.headers["Content-Type"]}, not currently handled.')
                     raise NotImplementedError
             elif response.status == 502:
                 return response
-                # todo: handle proxy error?
             elif response.status == 503:
                 raise aio.ClientError
             else:
                 return response
-
-    @staticmethod
-    def process_params(kwargs) -> dict:
-        return {k: v for k, v in kwargs.items() if v is not None}
 
 
 if __name__ == '__main__':

@@ -20,7 +20,7 @@ If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 
 import logging
 from dataclasses import dataclass, field
-from typing import List, NoReturn, Union
+from typing import List, Union
 
 import aiohttp as aio
 
@@ -29,13 +29,18 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Results:
-    results: List[Union[dict, aio.ClientResponse]]
+    """Results from aio.ClientRequest(s)
+
+    Processes, sorts, and removes empty keys (if requested).
+
+    Attributes:
+        data (List[Union[dict, aio.ClientResponse]]):
+        success (List[dict]):
+        failure (List[dict]):"""
+    data: List[Union[dict, aio.ClientResponse]]
     success: list = field(default_factory=list)
     failure: list = field(default_factory=list)
 
-    def cleanup(self) -> NoReturn:
-        del self.results
-
     @property
-    def dict(self):
+    def dict(self) -> dict:
         return {'success': self.success, 'failure': self.failure}

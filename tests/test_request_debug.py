@@ -31,7 +31,7 @@ async def test_request_debug():
     ts = time.perf_counter()
     bprint('Test: Request Debug')
 
-    with BaseApiClient() as bapi:
+    async with BaseApiClient() as bapi:
         async with aio.ClientSession() as session:
             response = await session.get('https://pypi.org', proxy=getenv('PROXY'))
 

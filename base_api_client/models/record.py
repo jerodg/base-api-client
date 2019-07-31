@@ -26,14 +26,29 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Record:
-    """Generic Record
+    """Generic Record"""
 
-    Takes a dict and converts it to a dataclass.
-    """
-
-    def __init__(self, **entries):
+    def load(self, **entries):
+        """Populates dataclass"""
         self.__dict__.update(entries)
 
     @property
-    def dict(self):
-        return {k: v for k, v in self.__dict__.items() if v is not None}
+    def dict(self, d: dict = None, sort_order: str = None, cleanup: bool = False) -> dict:
+        """
+        Args:
+            d (Optional[dict]):
+            sort_order (Optional[str]): ASC | DESC
+            cleanup (Optional[bool]):
+
+        Returns:
+            d (dict):"""
+        if not d:
+            d = self.__dict__
+
+        if cleanup:
+            d = {k: v for k, v in d.items() if v is not None}
+
+        if sort_order:
+            d = sorted(d, key=d.__getitem__, reverse=True if sort_order.lower() == 'desc' else False)
+
+        return d

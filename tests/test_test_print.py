@@ -54,7 +54,7 @@ async def test_request_debug():
             'mac_addresses':         ['00-10-18-4E-13-FC']}
            ]
 
-    with BaseApiClient() as bac:
+    async with BaseApiClient() as bac:
         bprint('Test: Test Print (All Results)')
         tprint(await bac.process_results(res))
 
