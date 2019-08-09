@@ -152,7 +152,11 @@ class BaseApiClient(object):
                 results.failure.append({**response, **rid})
             elif 200 <= status <= 299:
                 if data_key:
-                    results.success.extend([{**r, **rid} for r in response[data_key]])
+                    try:
+                        results.success.extend([{**r, **rid} for r in response[data_key]])
+                    except KeyError:
+                        logger.error(f'Key: {data_key}, does not exist in response data.')
+                        raise KeyError
                 else:
                     results.success.append({**response, **rid})
 
