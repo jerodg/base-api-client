@@ -40,3 +40,16 @@ class Results:
     @property
     def dict(self) -> dict:
         return {'success': self.success, 'failure': self.failure}
+
+    def cleanup(self, sort_order: str = 'asc', cleanup: bool = True, keep_request_id: bool = False):
+        success = []
+        for rec in self.success:
+            if not keep_request_id:
+                del rec['request_id']
+
+            d = {k: v for k, v in rec.items() if v is not None}
+            d = dict(sorted(d.items(), reverse=True if sort_order.lower() == 'desc' else False))
+            success.append(d)
+
+        self.success = success
+        del success
