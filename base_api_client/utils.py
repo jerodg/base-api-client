@@ -19,13 +19,15 @@ You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 from typing import NoReturn, Optional, Union
 
+from base_api_client import Results
+
 
 def bprint(message) -> NoReturn:
     msg = f'\n▃▅▇█▓▒░۩۞۩ {message.center(58)} ۩۞۩░▒▓█▇▅▃\n'
     print(msg)
 
 
-def tprint(results, top: Optional[Union[int, None]] = None) -> NoReturn:
+def tprint(results: Results, top: Optional[Union[int, None]] = None) -> NoReturn:
     # todo: sub banner for this?
     top_hdr = f'Top {top} ' if top else ''
 

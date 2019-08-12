@@ -70,7 +70,7 @@ def main() -> NoReturn:
           setup_requires=['pytest-runner'],
           tests_require=['pytest', 'pytest-asyncio'],
           url='https://pypi.org/project/base-api-client/',
-          version='0!0.7.3',
+          version='0!0.7.4',
           zip_safe=True)
 
 
