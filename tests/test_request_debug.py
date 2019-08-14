@@ -12,33 +12,34 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 SSPL for more details.
 
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
 You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 import time
-from os import environ
 
 import aiohttp as aio
 import pytest
+from os import getenv
 
-from base_api_client.base_api_client import BaseApiClient
-from base_api_client.base_api_utils import bprint
+from base_api_client import BaseApiClient, bprint
 
 
+# todo: use autodidact test endpoint to test, rewrite to handle changes to function
 @pytest.mark.asyncio
 async def test_request_debug():
     ts = time.perf_counter()
     bprint('Test: Request Debug')
 
-    environ['HTTPS_PROXY'] = 'http://webgateway.info53.com:8080'
-
-    with BaseApiClient() as bapi:
-        async with aio.ClientSession(trust_env=True) as session:
-            response = await session.get('https://pypi.org')
+    async with BaseApiClient() as bapi:
+        async with aio.ClientSession() as session:
+            response = await session.get('https://pypi.org', proxy=getenv('PROXY'))
 
         results = await bapi.request_debug(response=response)
 
         assert type(results) is str
 
-        print(results)
+        print('Results:\n', results)
 
-    bprint(f'-> Completed in {time.perf_counter() - ts} seconds.')
+    bprint(f'-> Completed in {(time.perf_counter() - ts):f} seconds.')

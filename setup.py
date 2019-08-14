@@ -20,7 +20,6 @@ from typing import NoReturn
 from setuptools import find_packages, setup
 
 logger = logging.getLogger(__name__)
-name = 'base-api-client'
 
 
 def readme() -> str:
@@ -29,48 +28,50 @@ def readme() -> str:
 
 
 def main() -> NoReturn:
-    setup(name='base-api-client',
-          version='1.0.0',
-          description='Base API Client Library',
-          long_description=readme(),
-          long_description_content_type='text/markdown',
+    setup(author_email='jerod@jerodg.dev',
+          author='Jerod Gawne',
           classifiers=['Development Status :: 5 - Production/Stable',
                        'Environment :: Console',
                        'Intended Audience :: End Users/Desktop',
                        'Intended Audience :: Developers',
                        'Intended Audience :: System Administrators',
-                       'License :: Server Side Public License (SSPL)',
+                       'License :: Other/Proprietary License',
                        'Natural Language :: English',
                        'Operating System :: MacOS :: MacOS X',
                        'Operating System :: Microsoft :: Windows',
                        'Operating System :: POSIX',
-                       'Programming Language :: Python :: 3.6',
                        'Programming Language :: Python :: 3.7',
                        'Programming Language :: Python :: 3.8',
                        'Topic :: Utilities',
                        'Topic :: Internet',
                        'Topic :: Internet :: WWW/HTTP'],
-          keywords='base api client rest',
-          url='',
-          author='Jerod Gawne',
-          author_email='jerod@jerodg.dev',
-          license='Server Side Public License (SSPL)',
-          packages=find_packages(),
+          description='Base API Client Library',
+          entry_points={'console_scripts': []},
+          include_package_data=True,
           install_requires=['aiodns',
                             'aiohttp',
                             'cchardet',
+                            'tenacity',
+                            'toml',
                             'ujson'],
-          include_package_data=True,
-          zip_safe=True,
+          keywords='base api client rest',
+          license='Server Side Public License (SSPL)',
+          long_description_content_type='text/markdown',
+          long_description=readme(),
+          name='base-api-client',
+          package_data={'base-api-client': []},
+          packages=find_packages(),
+          project_urls={'Bugs':          'https://github.com/jerodg/base-api-client/issues',
+                        'Documentation': 'https://jerodg.github.io/base-api-client',
+                        'Funding':       'https://www.paypal.me/jerodgawne',
+                        'Say Thanks!':   'https://saythanks.io/to/jerodg',
+                        'Source':        'https://github.com/jerodg/base-api-client'},
+          python_requires='>=3.7, <3.9',
           setup_requires=['pytest-runner'],
           tests_require=['pytest', 'pytest-asyncio'],
-          scripts=[],
-          entry_points={'console_scripts': []},
-          python_requires='~=3.6',
-          project_urls={'Documentation': '',
-                        'Source':        'https://github.com/jerodg/base-api-client',
-                        'Bugs':          'https://github.com/jerodg/base-api-client/issues'},
-          package_data={'base-api-client': []})
+          url='https://pypi.org/project/base-api-client/',
+          version='0!0.8.1',
+          zip_safe=True)
 
 
 if __name__ == '__main__':

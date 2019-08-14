@@ -1,5 +1,5 @@
 #!/usr/bin/env python3.8
-"""Base API Client: Utils
+"""Base API Client: Tests Init
 Copyright © 2019 Jerod Gawne <https://github.com/jerodg/>
 
 This program is free software: you can redistribute it and/or modify
@@ -12,15 +12,10 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 SSPL for more details.
 
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
 You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
-from typing import NoReturn
 
-
-def bprint(message) -> NoReturn:
-    msg = f'\n▃▅▇█▓▒░۩۞۩ {message.center(58)} ۩۞۩░▒▓█▇▅▃\n'
-    print(msg)
-
-
-if __name__ == '__main__':
-    print(__doc__)
+from tests import *
