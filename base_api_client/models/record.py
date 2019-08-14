@@ -29,7 +29,9 @@ class Record:
     """Generic Record"""
 
     def load(self, **entries):
-        """Populates dataclass"""
+        """Populates dataclass"
+        Notes:
+            Only works on 1-level dicts"""
         self.__dict__.update(entries)
 
     def dict(self, d: dict = None, sort_order: str = None, cleanup: bool = True) -> dict:

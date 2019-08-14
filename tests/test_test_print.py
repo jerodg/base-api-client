@@ -24,6 +24,7 @@ import pytest
 from base_api_client import BaseApiClient, bprint, tprint
 
 
+# todo: use autodidact test endpoint to test, rewrite to handle changes to function
 @pytest.mark.asyncio
 async def test_request_debug():
     ts = time.perf_counter()

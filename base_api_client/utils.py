@@ -17,7 +17,7 @@ copies or substantial portions of the Software.
 
 You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
-from typing import NoReturn, Optional, Union
+from typing import Any, NoReturn, Optional, Union
 
 from base_api_client import Results
 
@@ -27,7 +27,7 @@ def bprint(message) -> NoReturn:
     print(msg)
 
 
-def tprint(results: Results, top: Optional[Union[int, None]] = None) -> NoReturn:
+def tprint(results: Results, requests: Optional[Any] = None, top: Optional[Union[int, None]] = None) -> NoReturn:
     # todo: sub banner for this?
     top_hdr = f'Top {top} ' if top else ''
 
@@ -42,6 +42,13 @@ def tprint(results: Results, top: Optional[Union[int, None]] = None) -> NoReturn
         print(*results.failure[:top], sep='\n')
     else:
         print(*results.failure, sep='\n')
+
+    if requests:
+        print(f'\n{top_hdr}Requests Result{"s" if len(results.success) > 1 else ""}:')
+        if top:
+            print(*requests[:top], sep='\n')
+        else:
+            print(*requests, sep='\n')
 
 
 if __name__ == '__main__':

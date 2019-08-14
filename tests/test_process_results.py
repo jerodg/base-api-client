@@ -17,33 +17,35 @@ copies or substantial portions of the Software.
 
 You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
+import asyncio
 import time
 
+import aiohttp as aio
 import pytest
+import ujson
+from os import getenv
 
 from base_api_client import BaseApiClient, bprint, Results, tprint
 
 
+# todo: use autodidact test endpoint to test, rewrite to handle changes to function
 @pytest.mark.asyncio
 async def test_process_results():
     ts = time.perf_counter()
+    bprint('Test: Process Results')
 
-    async with BaseApiClient() as bac:
-        raw_results = [{'key0': 'value0',
-                        'key1': 'value1',
-                        'data': [{'some_key': 'some_value', 'another_key': 'another_value'},
-                                 {'some_key': 'some_value', 'another_key': 'another_value'}]}]
-
-        bprint('Test: Process Results')
-        results = await bac.process_results(results=raw_results)
-        tprint(results)
+    async with BaseApiClient(cfg=f'{getenv("CFG_HOME")}/base_api_client.toml') as bac:
+        async with aio.ClientSession(headers=bac.HDR, json_serialize=ujson.dumps) as session:
+            tasks = [asyncio.create_task(bac.request(method='get', end_point='http://www.omdbapi.com', session=session,
+                                                     params={'apikey': '42da97d5', 't': 'Blade Runner'}))]
+            results = Results(data=await asyncio.gather(*tasks))
 
         assert type(results) is Results
         assert results.success is not None
         assert not results.failure
+        processed_results = await bac.process_results(results)
+        tprint(processed_results)
 
-        bprint('Test: Process Results (Data List)')
-        results = await bac.process_results(results=raw_results, data_key='data')
-        tprint(results)
+    # todo: test arguments (data_key, cleanup, sort_field, sort_order)
 
     bprint(f'-> Completed in {(time.perf_counter() - ts):f} seconds.')

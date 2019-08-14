@@ -23,10 +23,12 @@ from asyncio import Semaphore
 from json.decoder import JSONDecodeError
 from ssl import create_default_context, Purpose
 from typing import List, NoReturn, Optional, Union
+from uuid import uuid4
 
 import aiohttp as aio
 import toml
 import ujson
+from diskcache import Index
 from multidict import MultiDict
 from tenacity import after_log, before_sleep_log, retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
 
@@ -39,7 +41,7 @@ class BaseApiClient(object):
     HDR: dict = {'Content-Type': 'application/json; charset=utf-8'}
     SEM: int = 15  # This defines the number of parallel async requests to make.
 
-    def __init__(self, cfg: Optional[Union[str, dict]] = None, sem: Optional[int] = None):
+    def __init__(self, cfg: Optional[Union[str, dict]] = None, sem: Optional[int] = None, index_location: Optional[str] = None):
         self.sem: Semaphore = Semaphore(sem or self.SEM)
         self.header: Union[dict, None] = None
         self.proxy: Union[str, None] = None
@@ -47,14 +49,18 @@ class BaseApiClient(object):
         self.ssl = None
         self.auth = None
         self.cfg: Union[dict, None] = None
-
         self.__load_config(cfg=cfg)
+
+        self.session = aio.ClientSession(headers=self.HDR, json_serialize=ujson.dumps)
+
+        if index_location:
+            self.index = Index(index_location)
 
     async def __aenter__(self):
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        pass
+        await self.session.__aexit__(exc_type, exc_val, exc_tb)
 
     def __load_config(self, cfg) -> NoReturn:
         if type(cfg) is dict:
@@ -179,7 +185,8 @@ class BaseApiClient(object):
            after=after_log(logger, logging.DEBUG),
            stop=stop_after_attempt(5),
            before_sleep=before_sleep_log(logger, logging.WARNING))
-    async def request(self, method: str, end_point: str, session: aio.ClientSession, request_id: str,
+    async def request(self, method: str, end_point: str,
+                      request_id: Optional[str] = None,
                       data: Optional[dict] = None,
                       json: Optional[dict] = None,
                       params: Optional[Union[List[tuple], dict, MultiDict]] = None) -> dict:
@@ -199,37 +206,40 @@ class BaseApiClient(object):
         Raises:
             NotImplementedError
         """
+        if not request_id:
+            request_id = uuid4().hex
+
         async with self.sem:
             if method == 'get':
-                response = await session.get(url=f'{self.cfg["URI"]["Base"]}{end_point}',
-                                             ssl=self.ssl,
-                                             proxy=self.proxy,
-                                             proxy_auth=self.proxy_auth,
-                                             params=params)
+                response = await self.session.get(url=f'{self.cfg["URI"]["Base"]}{end_point}',
+                                                  ssl=self.ssl,
+                                                  proxy=self.proxy,
+                                                  proxy_auth=self.proxy_auth,
+                                                  params=params)
             elif method == 'post':
-                response = await session.post(url=f'{self.cfg["URI"]["Base"]}{end_point}',
-                                              ssl=self.ssl,
-                                              proxy=self.proxy,
-                                              proxy_auth=self.proxy_auth,
-                                              data=data,
-                                              json=json,
-                                              params=params)
+                response = await self.session.post(url=f'{self.cfg["URI"]["Base"]}{end_point}',
+                                                   ssl=self.ssl,
+                                                   proxy=self.proxy,
+                                                   proxy_auth=self.proxy_auth,
+                                                   data=data,
+                                                   json=json,
+                                                   params=params)
             elif method == 'put':
-                response = await session.put(url=f'{self.cfg["URI"]["Base"]}{end_point}',
-                                             ssl=self.ssl,
-                                             proxy=self.proxy,
-                                             proxy_auth=self.proxy_auth,
-                                             data=data,
-                                             json=json,
-                                             params=params)
+                response = await self.session.put(url=f'{self.cfg["URI"]["Base"]}{end_point}',
+                                                  ssl=self.ssl,
+                                                  proxy=self.proxy,
+                                                  proxy_auth=self.proxy_auth,
+                                                  data=data,
+                                                  json=json,
+                                                  params=params)
             elif method == 'delete':
-                response = await session.delete(url=f'{self.cfg["URI"]["Base"]}{end_point}',
-                                                ssl=self.ssl,
-                                                proxy=self.proxy,
-                                                proxy_auth=self.proxy_auth,
-                                                data=data,
-                                                json=json,
-                                                params=params)
+                response = await self.session.delete(url=f'{self.cfg["URI"]["Base"]}{end_point}',
+                                                     ssl=self.ssl,
+                                                     proxy=self.proxy,
+                                                     proxy_auth=self.proxy_auth,
+                                                     data=data,
+                                                     json=json,
+                                                     params=params)
             else:
                 logger.error(f'Request-Method: {method}, not currently handled.')
                 raise NotImplementedError
