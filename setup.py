@@ -63,7 +63,7 @@ def main() -> NoReturn:
           packages=find_packages(),
           project_urls={'Bugs':          'https://github.com/jerodg/base-api-client/issues',
                         'Documentation': 'https://jerodg.github.io/base-api-client',
-                        'Funding':       'Paypal: jerod@jerodg.dev',
+                        'Funding':       'https://www.paypal.me/jerodgawne',
                         'Say Thanks!':   'https://saythanks.io/to/jerodg',
                         'Source':        'https://github.com/jerodg/base-api-client'},
           python_requires='>=3.7, <3.9',
