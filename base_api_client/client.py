@@ -60,7 +60,7 @@ class BaseApiClient(object):
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.session.__aexit__(exc_type, exc_val, exc_tb)
+        await self.session.close()
 
     def __load_config(self, cfg) -> NoReturn:
         if type(cfg) is dict:
@@ -178,6 +178,9 @@ class BaseApiClient(object):
         elif sort_order:
             results.success.sort(reverse=True if sort_order == 'desc' else False)
 
+        # print('results_base:', results)
+        # print('results_base_success:')
+        # print(*results.success, sep='\n')
         return results
 
     @retry(retry=retry_if_exception_type(aio.ClientError),
