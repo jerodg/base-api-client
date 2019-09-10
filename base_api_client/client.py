@@ -18,6 +18,7 @@ copies or substantial portions of the Software.
 You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 
+import json
 import logging
 from asyncio import Semaphore
 from json.decoder import JSONDecodeError
@@ -41,7 +42,10 @@ class BaseApiClient(object):
     HDR: dict = {'Content-Type': 'application/json; charset=utf-8'}
     SEM: int = 15  # This defines the number of parallel async requests to make.
 
-    def __init__(self, cfg: Optional[Union[str, dict]] = None, sem: Optional[int] = None, index_location: Optional[str] = None):
+    def __init__(self, cfg: Optional[Union[str, dict]] = None,
+                 sem: Optional[int] = None,
+                 index_location: Optional[str] = None,
+                 session_config: dict = {}):
         self.sem: Semaphore = Semaphore(sem or self.SEM)
         self.header: Union[dict, None] = None
         self.proxy: Union[str, None] = None
@@ -50,8 +54,7 @@ class BaseApiClient(object):
         self.auth = None
         self.cfg: Union[dict, None] = None
         self.__load_config(cfg=cfg)
-
-        self.session = aio.ClientSession(headers=self.HDR, json_serialize=ujson.dumps)
+        self.session: aio.ClientSession = self.__session_config(session_config)
 
         if index_location:
             self.index = Index(index_location)
@@ -93,6 +96,30 @@ class BaseApiClient(object):
 
             if self.cfg['Auth']:
                 self.auth = aio.BasicAuth(login=self.cfg['Auth']['Username'], password=self.cfg['Auth']['Password'])
+
+    def __session_config(self, session_config):
+        try:
+            hdrs = {**self.HDR, self.cfg['Auth']['Header']: self.cfg['Auth']['Token']}
+        except (KeyError, TypeError):
+            hdrs = self.HDR
+        try:
+            jsn = session_config['json_serialize']
+        except (KeyError, TypeError):
+            jsn = json.dumps
+        try:
+            cookies = session_config['cookies']
+        except (KeyError, TypeError):
+            cookies = None
+        try:
+            cookie_jar = session_config['cookie_jar']
+        except (KeyError, TypeError):
+            cookie_jar = None
+
+        return aio.ClientSession(cookies=cookies,
+                                 cookie_jar=cookie_jar,
+                                 headers=hdrs,
+                                 auth=self.auth,
+                                 json_serialize=jsn)
 
     @staticmethod
     async def request_debug(response: aio.ClientResponse) -> str:
@@ -160,6 +187,8 @@ class BaseApiClient(object):
                 if data_key:
                     try:
                         results.success.extend([{**r, **rid} for r in response[data_key]])
+                    except TypeError:
+                        results.success.extend(response)
                     except KeyError:
                         logger.error(f'Key: {data_key}, does not exist in response data.')
                         raise KeyError
@@ -192,16 +221,17 @@ class BaseApiClient(object):
                       request_id: Optional[str] = None,
                       data: Optional[dict] = None,
                       json: Optional[dict] = None,
-                      params: Optional[Union[List[tuple], dict, MultiDict]] = None) -> dict:
+                      params: Optional[Union[List[tuple], dict, MultiDict]] = None,
+                      debug: Optional[bool] = False) -> dict:
         """Multi-purpose aiohttp request function
         Args:
             method (str): A valid HTTP Verb in [GET, POST]
             end_point (str): REST Endpoint; e.g. /devices/query
-            session (aio.ClientSession):
             request_id (str): Unique Identifier used to associate request with response
             data (Optional[dict]):
             json (Optional[dict]):
             params (Optional[Union[List[tuple], dict, MultiDict]]):
+            debug (Optional[bool]):
 
         References:
             https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Request_methods
@@ -246,6 +276,9 @@ class BaseApiClient(object):
             else:
                 logger.error(f'Request-Method: {method}, not currently handled.')
                 raise NotImplementedError
+
+            if debug:
+                print(await self.request_debug(response))
 
             try:
                 assert not response.status > 499
