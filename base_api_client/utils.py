@@ -31,20 +31,20 @@ def tprint(results: Results, requests: Optional[Any] = None, top: Optional[Union
     # todo: sub banner for this?
     top_hdr = f'Top {top} ' if top else ''
 
-    print(f'\n{top_hdr}Success Result{"s" if len(results.success) > 1 else ""}:')
+    print(f'\n{top_hdr}Success Result{"s" if len(results.success) > 1 else ""}: {len(results.success)}')
     if top:
         print(*results.success[:top], sep='\n')
     else:
         print(*results.success, sep='\n')
 
-    print(f'\n{top_hdr}Failure Result{"s" if len(results.failure) > 1 else ""}:')
+    print(f'\n{top_hdr}Failure Result{"s" if len(results.failure) > 1 else ""}: {len(results.failure)}')
     if top:
         print(*results.failure[:top], sep='\n')
     else:
         print(*results.failure, sep='\n')
 
     if requests:
-        print(f'\n{top_hdr}Requests Result{"s" if len(results.success) > 1 else ""}:')
+        print(f'\n{top_hdr}Requests Result{"s" if len(results.success) > 1 else ""}: {len(requests)}')
         if top:
             print(*requests[:top], sep='\n')
         else:
