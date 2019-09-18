@@ -168,6 +168,9 @@ class BaseApiClient(object):
             elif result['response'].headers['Content-Type'].startswith('application/json'):
                 response = await result['response'].json(encoding='utf-8', loads=ujson.loads)
 
+            elif result['response'].headers['Content-Type'].startswith('application/javascript'):
+                response = await result['response'].json(encoding='utf-8', loads=ujson.loads, content_type='application/javascript')
+
             elif result['response'].headers['Content-Type'].startswith('text/javascript'):
                 response = await result['response'].json(encoding='utf-8', loads=ujson.loads, content_type='text/javascript')
 
@@ -181,19 +184,26 @@ class BaseApiClient(object):
                 logger.error(f'Content-Type: {result["response"].headers["Content-Type"]}, not currently handled.')
                 raise NotImplementedError
 
-            if status > 299:
-                results.failure.append({**response, **rid})
-            elif 200 <= status <= 299:
-                if data_key:
-                    try:
-                        results.success.extend([{**r, **rid} for r in response[data_key]])
-                    except TypeError:
-                        results.success.extend(response)
-                    except KeyError:
-                        logger.error(f'Key: {data_key}, does not exist in response data.')
-                        raise KeyError
+            if 200 <= status <= 299:
+                try:
+                    d = response[data_key]
+                    if type(d) is list:
+                        data = [{**r, **rid} for r in d]
+                    else:
+                        data = response
+                except (KeyError, TypeError):
+                    if type(response) is list:
+                        data = [{**r, **rid} for r in response]
+                    else:
+                        data = {**response, **rid}
+
+                if type(data) is list:
+                    results.success.extend(data)
                 else:
-                    results.success.append({**response, **rid})
+                    results.success.append(data)
+
+            elif status > 299:
+                results.failure.append({**response, **rid})
 
         if cleanup:
             del results.data
@@ -207,9 +217,6 @@ class BaseApiClient(object):
         elif sort_order:
             results.success.sort(reverse=True if sort_order == 'desc' else False)
 
-        # print('results_base:', results)
-        # print('results_base_success:')
-        # print(*results.success, sep='\n')
         return results
 
     @retry(retry=retry_if_exception_type(aio.ClientError),
