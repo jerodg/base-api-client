@@ -53,3 +53,7 @@ class Results:
 
         self.success = success
         del success
+
+
+if __name__ == '__main__':
+    print(__doc__)

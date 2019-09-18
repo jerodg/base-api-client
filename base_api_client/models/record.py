@@ -28,11 +28,9 @@ logger = logging.getLogger(__name__)
 class Record:
     """Generic Record"""
 
-    def load(self, **entries):
-        """Populates dataclass"
-        Notes:
-            Only works on 1-level dicts"""
-        self.__dict__.update(entries)
+    def clear(self):
+        for k, v in self.__dict__.items():
+            self.__dict__[k] = None
 
     def dict(self, d: dict = None, sort_order: str = None, cleanup: bool = True) -> dict:
         """
@@ -53,3 +51,13 @@ class Record:
             d = sorted(d, key=d.__getitem__, reverse=True if sort_order.lower() == 'desc' else False)
 
         return d
+
+    def load(self, **entries):
+        """Populates dataclass"
+        Notes:
+            Only works on 1-level dicts"""
+        self.__dict__.update(entries)
+
+
+if __name__ == '__main__':
+    print(__doc__)
