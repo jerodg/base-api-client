@@ -28,7 +28,6 @@ def bprint(message) -> NoReturn:
 
 
 def tprint(results: Results, requests: Optional[Any] = None, top: Optional[Union[int, None]] = None) -> NoReturn:
-    # todo: sub banner for this?
     top_hdr = f'Top {top} ' if top else ''
 
     print(f'\n{top_hdr}Success Result{"s" if len(results.success) > 1 else ""}: {len(results.success)}')
