@@ -21,6 +21,7 @@ If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 import json
 import logging
 from asyncio import Semaphore
+from dataclasses import field
 from json.decoder import JSONDecodeError
 from ssl import create_default_context, Purpose
 from typing import List, NoReturn, Optional, Union
@@ -45,7 +46,7 @@ class BaseApiClient(object):
     def __init__(self, cfg: Optional[Union[str, dict]] = None,
                  sem: Optional[int] = None,
                  index_location: Optional[str] = None,
-                 session_config: dict = {}):
+                 session_config: dict = field(default_factory=dict)):
         self.sem: Semaphore = Semaphore(sem or self.SEM)
         self.header: Union[dict, None] = None
         self.proxy: Union[str, None] = None
@@ -162,27 +163,32 @@ class BaseApiClient(object):
             rid = {'request_id': result['request_id']}
             status = result['response'].status
 
-            if result['response'].headers['Content-Type'].startswith('application/jwt'):
-                response = {'token': await result['response'].text(encoding='utf-8'), 'token_type': 'Bearer'}
+            try:
+                if result['response'].headers['Content-Type'].startswith('application/jwt'):
+                    response = {'token': await result['response'].text(encoding='utf-8'), 'token_type': 'Bearer'}
 
-            elif result['response'].headers['Content-Type'].startswith('application/json'):
-                response = await result['response'].json(encoding='utf-8', loads=ujson.loads)
+                elif result['response'].headers['Content-Type'].startswith('application/json'):
+                    response = await result['response'].json(encoding='utf-8', loads=ujson.loads)
 
-            elif result['response'].headers['Content-Type'].startswith('application/javascript'):
-                response = await result['response'].json(encoding='utf-8', loads=ujson.loads, content_type='application/javascript')
+                elif result['response'].headers['Content-Type'].startswith('application/javascript'):
+                    response = await result['response'].json(encoding='utf-8', loads=ujson.loads,
+                                                             content_type='application/javascript')
 
-            elif result['response'].headers['Content-Type'].startswith('text/javascript'):
-                response = await result['response'].json(encoding='utf-8', loads=ujson.loads, content_type='text/javascript')
+                elif result['response'].headers['Content-Type'].startswith('text/javascript'):
+                    response = await result['response'].json(encoding='utf-8', loads=ujson.loads, content_type='text/javascript')
 
-            elif result['response'].headers['Content-Type'].startswith('text/plain'):
+                elif result['response'].headers['Content-Type'].startswith('text/plain'):
+                    response = {'text_plain': await result['response'].text(encoding='utf-8')}
+
+                elif result['response'].headers['Content-Type'].startswith('text/html'):
+                    response = {'text_html': await result['response'].text(encoding='utf-8')}
+
+                else:
+                    logger.error(f'Content-Type: {result["response"].headers["Content-Type"]}, not currently handled.')
+                    raise NotImplementedError
+            except KeyError as ke:  # This shouldn't happen too often.
+                logger.warning(ke)
                 response = {'text_plain': await result['response'].text(encoding='utf-8')}
-
-            elif result['response'].headers['Content-Type'].startswith('text/html'):
-                response = {'text_html': await result['response'].text(encoding='utf-8')}
-
-            else:
-                logger.error(f'Content-Type: {result["response"].headers["Content-Type"]}, not currently handled.')
-                raise NotImplementedError
 
             if 200 <= status <= 299:
                 try:
