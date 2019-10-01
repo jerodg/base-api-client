@@ -55,6 +55,7 @@ class BaseApiClient(object):
         self.auth = None
         self.cfg: Union[dict, None] = None
         self.__load_config(cfg=cfg)
+        self.debug: bool = False
         self.session: aio.ClientSession = self.__session_config(session_config)
 
         if index_location:
@@ -81,6 +82,7 @@ class BaseApiClient(object):
             self.cfg = None
 
         if self.cfg:
+            self.debug = self.cfg['Options']['Debug']
             proxy_uri = self.cfg['Proxy'].pop('URI', None)
             if proxy_uri:
                 proxy_port = self.cfg['Proxy'].pop('Port')
@@ -153,7 +155,7 @@ class BaseApiClient(object):
         data_key (Optional[str]):
         cleanup (Optional[bool]): Default: True
             Removes raw results, Removes empty (None) keys, and Sorts Keys of each record.
-        sort_field (Optional[str]): Top level dictionary key to sort on
+        sort_field (Optional[str]): Top incident_level dictionary key to sort on
         sort_order (Optional[str]): Direction to sort ASC | DESC (any case)
             Performs generic sort if sort_field not specified.
 
@@ -290,7 +292,7 @@ class BaseApiClient(object):
                 logger.error(f'Request-Method: {method}, not currently handled.')
                 raise NotImplementedError
 
-            if debug:
+            if self.debug or debug:
                 print(await self.request_debug(response))
 
             try:

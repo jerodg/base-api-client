@@ -10,7 +10,8 @@
   },
   "Options": {
     "CAPath": "",
-    "VerifySSL": true
+    "VerifySSL": true,
+    "Debug": false
   },
   "Proxy": {
     "URI": "",

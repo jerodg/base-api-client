@@ -29,6 +29,7 @@
 [Options]
     CAPath = ""  # Full path to Certificate Authority file
     VerifySSL = true
+    Debug = false
 
 [Proxy]  # Optional
     URI = ""

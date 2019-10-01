@@ -55,7 +55,7 @@ class Record:
     def load(self, **entries):
         """Populates dataclass"
         Notes:
-            Only works on 1-level dicts"""
+            Only works on top-level dicts"""
         self.__dict__.update(entries)
 
 
