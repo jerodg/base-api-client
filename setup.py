@@ -51,9 +51,10 @@ def main() -> NoReturn:
           install_requires=['aiodns',
                             'aiohttp',
                             'cchardet',
+                            'diskcache',
+                            'python-rapidjson',
                             'tenacity',
-                            'toml',
-                            'ujson'],
+                            'toml'],
           keywords='base api client rest',
           license='Server Side Public License (SSPL)',
           long_description_content_type='text/markdown',
@@ -70,7 +71,7 @@ def main() -> NoReturn:
           setup_requires=['pytest-runner'],
           tests_require=['pytest', 'pytest-asyncio'],
           url='https://pypi.org/project/base-api-client/',
-          version='0!0.8.6',
+          version='0!0.8.8',
           zip_safe=True)
 
 

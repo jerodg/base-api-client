@@ -18,7 +18,6 @@ copies or substantial portions of the Software.
 You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 
-import json
 import logging
 from asyncio import Semaphore
 from dataclasses import field
@@ -28,8 +27,8 @@ from typing import List, NoReturn, Optional, Union
 from uuid import uuid4
 
 import aiohttp as aio
+import rapidjson
 import toml
-import ujson
 from diskcache import Index
 from multidict import MultiDict
 from tenacity import after_log, before_sleep_log, retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
@@ -39,9 +38,12 @@ from base_api_client.models import Results
 logger = logging.getLogger(__name__)
 
 
+# todo: convert request debug to template
+
+
 class BaseApiClient(object):
     HDR: dict = {'Content-Type': 'application/json; charset=utf-8'}
-    SEM: int = 15  # This defines the number of parallel async requests to make.
+    SEM: int = 15  # This defines the number of parallel requests to make.
 
     def __init__(self, cfg: Optional[Union[str, dict]] = None,
                  sem: Optional[int] = None,
@@ -67,14 +69,14 @@ class BaseApiClient(object):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.session.close()
 
-    def __load_config(self, cfg) -> NoReturn:
+    def __load_config(self, cfg: Union[str, dict]) -> NoReturn:
         if type(cfg) is dict:
             self.cfg = cfg
         elif type(cfg) is str:
             if cfg.endswith('.toml'):
                 self.cfg = toml.load(cfg)
             elif cfg.endswith('.json'):
-                self.cfg = ujson.loads(open(cfg).read(), ensure_ascii=False)
+                self.cfg = rapidjson.loads(open(cfg).read(), ensure_ascii=False)
             else:
                 logger.error(f'Unknown configuration file type: {cfg.split(".")[1]}\n-> Valid Types: .toml | .json')
                 raise NotImplementedError
@@ -100,7 +102,7 @@ class BaseApiClient(object):
             if self.cfg['Auth']:
                 self.auth = aio.BasicAuth(login=self.cfg['Auth']['Username'], password=self.cfg['Auth']['Password'])
 
-    def __session_config(self, session_config):
+    def __session_config(self, session_config: dict) -> aio.ClientSession:
         try:
             hdrs = {**self.HDR, self.cfg['Auth']['Header']: self.cfg['Auth']['Token']}
         except (KeyError, TypeError):
@@ -108,15 +110,13 @@ class BaseApiClient(object):
         try:
             jsn = session_config['json_serialize']
         except (KeyError, TypeError):
-            jsn = json.dumps
+            jsn = rapidjson.dumps
         try:
             cookies = session_config['cookies']
         except (KeyError, TypeError):
             cookies = None
-        try:
-            cookie_jar = session_config['cookie_jar']
-        except (KeyError, TypeError):
-            cookie_jar = None
+
+        cookie_jar = aio.CookieJar(unsafe=True)
 
         return aio.ClientSession(cookies=cookies,
                                  cookie_jar=cookie_jar,
@@ -126,10 +126,9 @@ class BaseApiClient(object):
 
     @staticmethod
     async def request_debug(response: aio.ClientResponse) -> str:
-        # todo: convert to template
         hdr = '\n\t\t'.join(f'{k}: {v}' for k, v in response.headers.items())
         try:
-            j = ujson.dumps(await response.json(content_type=None), ensure_ascii=False)
+            j = rapidjson.dumps(await response.json(content_type=None), ensure_ascii=False)
             t = None
         except JSONDecodeError:
             j = None
@@ -170,14 +169,15 @@ class BaseApiClient(object):
                     response = {'token': await result['response'].text(encoding='utf-8'), 'token_type': 'Bearer'}
 
                 elif result['response'].headers['Content-Type'].startswith('application/json'):
-                    response = await result['response'].json(encoding='utf-8', loads=ujson.loads)
+                    response = await result['response'].json(encoding='utf-8', loads=rapidjson.loads)
 
                 elif result['response'].headers['Content-Type'].startswith('application/javascript'):
-                    response = await result['response'].json(encoding='utf-8', loads=ujson.loads,
+                    response = await result['response'].json(encoding='utf-8', loads=rapidjson.loads,
                                                              content_type='application/javascript')
 
                 elif result['response'].headers['Content-Type'].startswith('text/javascript'):
-                    response = await result['response'].json(encoding='utf-8', loads=ujson.loads, content_type='text/javascript')
+                    response = await result['response'].json(encoding='utf-8', loads=rapidjson.loads,
+                                                             content_type='text/javascript')
 
                 elif result['response'].headers['Content-Type'].startswith('text/plain'):
                     response = {'text_plain': await result['response'].text(encoding='utf-8')}
