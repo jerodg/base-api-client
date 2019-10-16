@@ -20,17 +20,17 @@ If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 
 import logging
 from asyncio import Semaphore
-from dataclasses import field
 from json.decoder import JSONDecodeError
-from ssl import create_default_context, Purpose
+from ssl import create_default_context, Purpose, SSLContext
 from typing import List, NoReturn, Optional, Union
 from uuid import uuid4
 
 import aiohttp as aio
+import diskcache as dc
 import rapidjson
 import toml
-from diskcache import Index
 from multidict import MultiDict
+from os import getenv
 from tenacity import after_log, before_sleep_log, retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
 
 from base_api_client.models import Results
@@ -39,29 +39,29 @@ logger = logging.getLogger(__name__)
 
 
 # todo: convert request debug to template
+# todo: add envar override for config
+# todo: self.header is not necessary; find others
+# todo: session_config, ensure order of config; config_file -> Environment Variables -> session_config(dict)
 
 
 class BaseApiClient(object):
     HDR: dict = {'Content-Type': 'application/json; charset=utf-8'}
     SEM: int = 15  # This defines the number of parallel requests to make.
 
-    def __init__(self, cfg: Optional[Union[str, dict]] = None,
-                 sem: Optional[int] = None,
-                 index_location: Optional[str] = None,
-                 session_config: dict = field(default_factory=dict)):
-        self.sem: Semaphore = Semaphore(sem or self.SEM)
+    def __init__(self, cfg: Optional[Union[str, dict]] = None):
+        self.auth: Union[aio.BasicAuth, None] = None
+        self.cache: Union[dc.Cache, dc.FanoutCache, dc.Deque, dc.Index, None] = None
+        self.debug: bool = False
+        self.cfg: Union[dict, None] = None
         self.header: Union[dict, None] = None
         self.proxy: Union[str, None] = None
         self.proxy_auth: Union[aio.BasicAuth, None] = None
-        self.ssl = None
-        self.auth = None
-        self.cfg: Union[dict, None] = None
-        self.__load_config(cfg=cfg)
-        self.debug: bool = False
-        self.session: aio.ClientSession = self.__session_config(session_config)
+        self.sem: Union[Semaphore, None] = None
+        self.session: Union[aio.ClientSession, None] = None
+        self.ssl: Union[SSLContext, None] = None
 
-        if index_location:
-            self.index = Index(index_location)
+        await self.__load_config(cfg=cfg)
+        await self.session_config(session_config=cfg)
 
     async def __aenter__(self):
         return self
@@ -69,60 +69,163 @@ class BaseApiClient(object):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.session.close()
 
-    def __load_config(self, cfg: Union[str, dict]) -> NoReturn:
+    async def __load_config(self, cfg: Union[str, dict]) -> NoReturn:
+        """
+
+        Args:
+            cfg (Union[str, dict): str; path to config file [toml|json]
+                                   dict; dictionary matching config example
+                Values expressed in example config can be overridden by OS
+                environment variables.
+
+        Returns:
+            (NoReturn)
+        """
         if type(cfg) is dict:
             self.cfg = cfg
         elif type(cfg) is str:
             if cfg.endswith('.toml'):
-                self.cfg = toml.load(cfg)
+                cfg = toml.load(cfg)
             elif cfg.endswith('.json'):
-                self.cfg = rapidjson.loads(open(cfg).read(), ensure_ascii=False)
+                cfg = rapidjson.loads(open(cfg).read(), ensure_ascii=False)
             else:
                 logger.error(f'Unknown configuration file type: {cfg.split(".")[1]}\n-> Valid Types: .toml | .json')
                 raise NotImplementedError
-        elif cfg is None:
-            self.cfg = None
 
-        if self.cfg:
-            self.debug = self.cfg['Options']['Debug']
-            proxy_uri = self.cfg['Proxy'].pop('URI', None)
-            if proxy_uri:
-                proxy_port = self.cfg['Proxy'].pop('Port')
-                proxy_user = self.cfg['Proxy'].pop('Username')
-                proxy_pass = self.cfg['Proxy'].pop('Password')
-                self.proxy = f'{proxy_uri}:{proxy_port}'
-                self.proxy_auth = aio.BasicAuth(login=proxy_user, password=proxy_pass)
+        env_cfg = {'Auth':    {'Username': getenv('Auth_Username'),
+                               'Password': getenv('Auth_Password'),
+                               'Header':   getenv('Auth_Header'),
+                               'Token':    getenv('Auth_Token')},
+                   'URI':     {'Base': getenv('URI_Base')},
+                   'Options': {'CAPath':    getenv('Options_CAPath'),
+                               'VerifySSL': getenv('Options_VerifySSL'),
+                               'Debug':     getenv('Options_Debug'),
+                               'SEM':       getenv('Options_SEM')},
+                   'Proxy':   {'URI':      getenv('Proxy_URI'),
+                               'Port':     getenv('Proxy_Port'),
+                               'Username': getenv('Proxy_Username'),
+                               'Password': getenv('Proxy_password')},
+                   'Cache':   {'Path': getenv('Cache_Path'),
+                               'Type': getenv('Cache_Type')}}
 
-            ssl_path = self.cfg['Options'].pop('CAPath', None)
-            if ssl_path:
+        if not cfg['URI'] or not env_cfg['URI']:
+            logger.error('No configuration provided.')
+            raise NotImplementedError
+
+        if cfg:
+            if username := cfg['Auth'].pop('Username', None):
+                self.auth = aio.BasicAuth(login=username, password=cfg['Auth'].pop('Password', None))
+            if env_username := env_cfg['Auth'].pop('Username', None):
+                self.auth = aio.BasicAuth(login=env_username, password=env_cfg['Auth'].pop('Password', None))
+
+            if debug := cfg['Options'].pop('Debug', False):
+                self.debug = debug
+            if env_debug := env_cfg['Options'].pop('Debug', False):
+                self.debug = env_debug
+
+            if header := cfg['Auth'].pop('Header', None):
+                self.header = {**self.HDR, header: cfg['Auth'].pop('Token', None)}
+            if env_header := env_cfg['Auth'].pop('Header', None):
+                self.header = {**self.HDR, env_header: env_cfg['Auth'].pop('Token', None)}
+
+            if proxy_uri := cfg['Proxy'].pop('URI', None):
+                proxy_port = cfg['Proxy'].pop('Port', '')
+                self.proxy = f'{proxy_uri}{":" if proxy_port else ""}{proxy_port}'
+                self.proxy_auth = aio.BasicAuth(login=cfg['Proxy'].pop('Username', None),
+                                                password=cfg['Proxy'].pop('Password', None))
+            if env_proxy_uri := env_cfg['Proxy'].pop('URI', None):
+                env_proxy_port = env_cfg['Proxy'].pop('Port', '')
+                self.proxy = f'{env_proxy_uri}{":" if env_proxy_port else ""}{env_proxy_port}'
+                self.proxy_auth = aio.BasicAuth(login=env_cfg['Proxy'].pop('Username', None),
+                                                password=env_cfg['Proxy'].pop('Password', None))
+
+            if sem := cfg['Options'].pop('SEM', None):
+                self.sem = sem
+            if env_sem := env_cfg['Options'].pop('SEM', None):
+                self.sem = env_sem
+
+            if ssl_path := cfg['Options'].pop('CAPath', None):
                 self.ssl = create_default_context(purpose=Purpose.CLIENT_AUTH, capath=ssl_path)
             else:
-                self.ssl = self.cfg['Options'].pop('VerifySSL', True)
+                self.ssl = cfg['Options'].pop('VerifySSL', True)
 
-            if self.cfg['Auth']:
-                self.auth = aio.BasicAuth(login=self.cfg['Auth']['Username'], password=self.cfg['Auth']['Password'])
+            if env_ssl_path := env_cfg['Options'].pop('CAPath', None):
+                self.ssl = create_default_context(purpose=Purpose.CLIENT_AUTH, capath=env_ssl_path)
 
-    def __session_config(self, session_config: dict) -> aio.ClientSession:
+            cache_type = cfg['Cache'].pop('Type', None)
+            if ct := env_cfg['Cache'].pop('Type', None):
+                cache_type = ct
+
+            cache_path = cfg['Cache'].pop('Path', None)
+            if cp := env_cfg['Cache'].pop('Path'):
+                cache_path = cp
+
+            if cache_type:
+                if cache_type == 'cache':
+                    self.cache = dc.Cache(cache_path)
+                elif cache_type == 'fanout_cache':
+                    self.cache = dc.FanoutCache(cache_path)
+                elif cache_type == 'deque':
+                    self.cache = dc.Deque(cache_path)
+                elif cache_type == 'index':
+                    self.cache = dc.Index(cache_path)
+                else:
+                    logger.error(f'Invalid cache type: {cache_type}\n->Must be one of: cache|fanout_cache|deque|index')
+                    raise NotImplementedError
+
+    async def session_config(self, session_config: dict) -> NoReturn:
+        if self.session:
+            await self.session.close()
+
+        # Auth
+        username = session_config['Auth'].pop('Username', None)
+        if env_username := getenv('Auth_Username'):
+            username = env_username
+        password = session_config['Auth'].pop('Password', None)
+        if env_password := getenv('Auth_Password'):
+            password = env_password
+
+        if username:
+            auth = aio.BasicAuth(login=username, password=password)
+        else:
+            auth = None
+
+        # Cookies; Can't be overwridden by env_vars; Must be a dict
         try:
-            hdrs = {**self.HDR, self.cfg['Auth']['Header']: self.cfg['Auth']['Token']}
-        except (KeyError, TypeError):
-            hdrs = self.HDR
-        try:
-            jsn = session_config['json_serialize']
-        except (KeyError, TypeError):
-            jsn = rapidjson.dumps
-        try:
-            cookies = session_config['cookies']
+            cookies = session_config['Cache']['Cookies']
         except (KeyError, TypeError):
             cookies = None
 
-        cookie_jar = aio.CookieJar(unsafe=True)
+        # Cookie Jar
+        cookie_jar = aio.CookieJar(unsafe=session_config['Options'].pop('CookieJar_Unsafe', None) or False)
 
-        return aio.ClientSession(cookies=cookies,
-                                 cookie_jar=cookie_jar,
-                                 headers=hdrs,
-                                 auth=self.auth,
-                                 json_serialize=jsn)
+        # Headers
+        auth_hdr = session_config['Auth'].pop('Header', None)
+        if env_hdr := getenv('Auth_Header'):
+            auth_hdr = env_hdr
+
+        auth_tkn = session_config['Auth'].pop('Token', None)
+        if env_tkn := getenv('Auth_Token'):
+            auth_tkn = env_tkn
+
+        if auth_hdr and auth_tkn:
+            hdrs = {**self.HDR, session_config['Auth']['Header']: session_config['Auth']['Token']}
+        else:
+            hdrs = self.HDR
+
+        # JSON Serialize
+        try:
+            jsn = session_config['Options']['JSON_Serialize']
+            if env_jsn := getenv('Options_JSONSerialize'):
+                jsn = env_jsn
+        except (KeyError, TypeError):
+            jsn = rapidjson.dumps
+
+        self.session = aio.ClientSession(auth=auth,
+                                         cookies=cookies,
+                                         cookie_jar=cookie_jar,
+                                         headers=hdrs,
+                                         json_serialize=jsn)
 
     @staticmethod
     async def request_debug(response: aio.ClientResponse) -> str:
@@ -159,7 +262,7 @@ class BaseApiClient(object):
             Performs generic sort if sort_field not specified.
 
         Returns:
-            res (Results): """
+            results (Results): """
         for result in results.data:
             rid = {'request_id': result['request_id']}
             status = result['response'].status
@@ -167,24 +270,18 @@ class BaseApiClient(object):
             try:
                 if result['response'].headers['Content-Type'].startswith('application/jwt'):
                     response = {'token': await result['response'].text(encoding='utf-8'), 'token_type': 'Bearer'}
-
                 elif result['response'].headers['Content-Type'].startswith('application/json'):
                     response = await result['response'].json(encoding='utf-8', loads=rapidjson.loads)
-
                 elif result['response'].headers['Content-Type'].startswith('application/javascript'):
                     response = await result['response'].json(encoding='utf-8', loads=rapidjson.loads,
                                                              content_type='application/javascript')
-
                 elif result['response'].headers['Content-Type'].startswith('text/javascript'):
                     response = await result['response'].json(encoding='utf-8', loads=rapidjson.loads,
                                                              content_type='text/javascript')
-
                 elif result['response'].headers['Content-Type'].startswith('text/plain'):
                     response = {'text_plain': await result['response'].text(encoding='utf-8')}
-
                 elif result['response'].headers['Content-Type'].startswith('text/html'):
                     response = {'text_html': await result['response'].text(encoding='utf-8')}
-
                 else:
                     logger.error(f'Content-Type: {result["response"].headers["Content-Type"]}, not currently handled.')
                     raise NotImplementedError
