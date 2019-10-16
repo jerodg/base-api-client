@@ -18,6 +18,7 @@ copies or substantial portions of the Software.
 You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 
+import asyncio
 import logging
 from asyncio import Semaphore
 from json.decoder import JSONDecodeError
@@ -39,9 +40,7 @@ logger = logging.getLogger(__name__)
 
 
 # todo: convert request debug to template
-# todo: add envar override for config
-# todo: self.header is not necessary; find others
-# todo: session_config, ensure order of config; config_file -> Environment Variables -> session_config(dict)
+# todo: save cookie jar
 
 
 class BaseApiClient(object):
@@ -49,19 +48,18 @@ class BaseApiClient(object):
     SEM: int = 15  # This defines the number of parallel requests to make.
 
     def __init__(self, cfg: Optional[Union[str, dict]] = None):
-        self.auth: Union[aio.BasicAuth, None] = None
         self.cache: Union[dc.Cache, dc.FanoutCache, dc.Deque, dc.Index, None] = None
         self.debug: bool = False
         self.cfg: Union[dict, None] = None
-        self.header: Union[dict, None] = None
         self.proxy: Union[str, None] = None
         self.proxy_auth: Union[aio.BasicAuth, None] = None
         self.sem: Union[Semaphore, None] = None
         self.session: Union[aio.ClientSession, None] = None
         self.ssl: Union[SSLContext, None] = None
 
-        await self.__load_config(cfg=cfg)
-        await self.session_config(session_config=cfg)
+        cfg = self.__load_config_data(cfg)
+        self.process_config(cfg)
+        self.session_config(cfg)
 
     async def __aenter__(self):
         return self
@@ -69,163 +67,201 @@ class BaseApiClient(object):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.session.close()
 
-    async def __load_config(self, cfg: Union[str, dict]) -> NoReturn:
+    def __load_config_data(self, cfg_data: Union[str, dict]) -> dict:
         """
 
         Args:
-            cfg (Union[str, dict): str; path to config file [toml|json]
+            cfg_data (Union[str, dict): str; path to config file [toml|json]
                                    dict; dictionary matching config example
                 Values expressed in example config can be overridden by OS
                 environment variables.
 
         Returns:
-            (NoReturn)
+            cfg (dict)
         """
-        if type(cfg) is dict:
-            self.cfg = cfg
-        elif type(cfg) is str:
-            if cfg.endswith('.toml'):
-                cfg = toml.load(cfg)
-            elif cfg.endswith('.json'):
-                cfg = rapidjson.loads(open(cfg).read(), ensure_ascii=False)
+        if type(cfg_data) is dict:
+            cfg = cfg_data
+        elif type(cfg_data) is str:
+            if cfg_data.endswith('.toml'):
+                cfg = toml.load(cfg_data)
+            elif cfg_data.endswith('.json'):
+                cfg = rapidjson.loads(open(cfg_data).read(), ensure_ascii=False)
             else:
-                logger.error(f'Unknown configuration file type: {cfg.split(".")[1]}\n-> Valid Types: .toml | .json')
+                logger.error(f'Unknown configuration file type: {cfg_data.split(".")[1]}\n-> Valid Types: .toml | .json')
                 raise NotImplementedError
+        else:
+            cfg = None
 
-        env_cfg = {'Auth':    {'Username': getenv('Auth_Username'),
-                               'Password': getenv('Auth_Password'),
-                               'Header':   getenv('Auth_Header'),
-                               'Token':    getenv('Auth_Token')},
-                   'URI':     {'Base': getenv('URI_Base')},
-                   'Options': {'CAPath':    getenv('Options_CAPath'),
-                               'VerifySSL': getenv('Options_VerifySSL'),
-                               'Debug':     getenv('Options_Debug'),
-                               'SEM':       getenv('Options_SEM')},
-                   'Proxy':   {'URI':      getenv('Proxy_URI'),
-                               'Port':     getenv('Proxy_Port'),
-                               'Username': getenv('Proxy_Username'),
-                               'Password': getenv('Proxy_password')},
-                   'Cache':   {'Path': getenv('Cache_Path'),
-                               'Type': getenv('Cache_Type')}}
+        if env_auth_user := getenv('Auth_Username'):
+            cfg['Auth']['Username'] = env_auth_user
 
-        if not cfg['URI'] or not env_cfg['URI']:
-            logger.error('No configuration provided.')
-            raise NotImplementedError
+        if env_auth_pass := getenv('Auth_Password'):
+            cfg['Auth']['Password'] = env_auth_pass
 
-        if cfg:
-            if username := cfg['Auth'].pop('Username', None):
-                self.auth = aio.BasicAuth(login=username, password=cfg['Auth'].pop('Password', None))
-            if env_username := env_cfg['Auth'].pop('Username', None):
-                self.auth = aio.BasicAuth(login=env_username, password=env_cfg['Auth'].pop('Password', None))
+        if env_auth_header := getenv('Auth_Header'):
+            cfg['Auth']['Header'] = env_auth_header
 
-            if debug := cfg['Options'].pop('Debug', False):
-                self.debug = debug
-            if env_debug := env_cfg['Options'].pop('Debug', False):
-                self.debug = env_debug
+        if env_auth_token := getenv('Auth_Token'):
+            cfg['Auth']['Token'] = env_auth_token
 
-            if header := cfg['Auth'].pop('Header', None):
-                self.header = {**self.HDR, header: cfg['Auth'].pop('Token', None)}
-            if env_header := env_cfg['Auth'].pop('Header', None):
-                self.header = {**self.HDR, env_header: env_cfg['Auth'].pop('Token', None)}
+        if env_uri_base := getenv('URI_Base'):
+            cfg['URI']['Base'] = env_uri_base
 
-            if proxy_uri := cfg['Proxy'].pop('URI', None):
-                proxy_port = cfg['Proxy'].pop('Port', '')
-                self.proxy = f'{proxy_uri}{":" if proxy_port else ""}{proxy_port}'
-                self.proxy_auth = aio.BasicAuth(login=cfg['Proxy'].pop('Username', None),
-                                                password=cfg['Proxy'].pop('Password', None))
-            if env_proxy_uri := env_cfg['Proxy'].pop('URI', None):
-                env_proxy_port = env_cfg['Proxy'].pop('Port', '')
-                self.proxy = f'{env_proxy_uri}{":" if env_proxy_port else ""}{env_proxy_port}'
-                self.proxy_auth = aio.BasicAuth(login=env_cfg['Proxy'].pop('Username', None),
-                                                password=env_cfg['Proxy'].pop('Password', None))
+        if env_opt_ca := getenv('Options_CAPath'):
+            cfg['Options']['CAPath'] = env_opt_ca
 
-            if sem := cfg['Options'].pop('SEM', None):
-                self.sem = sem
-            if env_sem := env_cfg['Options'].pop('SEM', None):
-                self.sem = env_sem
+        if env_opt_ssl := getenv('Options_VerifySSL'):
+            cfg['Options']['VerifySS:'] = env_opt_ssl
 
-            if ssl_path := cfg['Options'].pop('CAPath', None):
-                self.ssl = create_default_context(purpose=Purpose.CLIENT_AUTH, capath=ssl_path)
-            else:
-                self.ssl = cfg['Options'].pop('VerifySSL', True)
+        if env_opt_dbg := getenv('Options_Debug'):
+            cfg['Options']['Ddebug'] = env_opt_dbg
 
-            if env_ssl_path := env_cfg['Options'].pop('CAPath', None):
-                self.ssl = create_default_context(purpose=Purpose.CLIENT_AUTH, capath=env_ssl_path)
+        if env_opt_sem := getenv('Options_SEM'):
+            cfg['Options']['SEM'] = env_opt_sem
 
-            cache_type = cfg['Cache'].pop('Type', None)
-            if ct := env_cfg['Cache'].pop('Type', None):
-                cache_type = ct
+        if env_prxy_uri := getenv('Proxy_URI'):
+            cfg['Proxy']['URI'] = env_prxy_uri
 
-            cache_path = cfg['Cache'].pop('Path', None)
-            if cp := env_cfg['Cache'].pop('Path'):
-                cache_path = cp
+        if env_prxy_port := getenv('Proxy_Port'):
+            cfg['Proxy']['Port'] = env_prxy_port
 
-            if cache_type:
-                if cache_type == 'cache':
-                    self.cache = dc.Cache(cache_path)
-                elif cache_type == 'fanout_cache':
-                    self.cache = dc.FanoutCache(cache_path)
-                elif cache_type == 'deque':
-                    self.cache = dc.Deque(cache_path)
-                elif cache_type == 'index':
-                    self.cache = dc.Index(cache_path)
-                else:
-                    logger.error(f'Invalid cache type: {cache_type}\n->Must be one of: cache|fanout_cache|deque|index')
-                    raise NotImplementedError
+        if env_prxy_user := getenv('Proxy_Username'):
+            cfg['Proxy']['Username'] = env_prxy_user
 
-    async def session_config(self, session_config: dict) -> NoReturn:
-        if self.session:
-            await self.session.close()
+        if env_prxy_pass := getenv('Proxy_Password'):
+            cfg['Proxy']['Password'] = env_prxy_pass
 
+        self.cfg = cfg
+
+        return cfg
+
+    def process_config(self, cfg_data: dict):
+        try:
+            if cfg_data['Options']['Debug']:
+                self.debug = True
+        except KeyError:
+            self.debug = False
+
+        try:
+            proxy_uri = cfg_data['Proxy']['URI']
+        except KeyError:
+            proxy_uri = None
+
+        try:
+            proxy_port = cfg_data['Proxy']['Port']
+        except KeyError:
+            proxy_port = ''
+
+        try:
+            proxy_user = cfg_data['Proxy']['Username']
+        except KeyError:
+            proxy_user = None
+
+        try:
+            proxy_pass = cfg_data['Proxy']['Password']
+        except KeyError:
+            proxy_pass = None
+
+        if proxy_uri:
+            self.proxy = f'{proxy_uri}{":" if proxy_port else ""}{proxy_port}'
+
+        if proxy_user:
+            self.proxy_auth = aio.BasicAuth(login=proxy_user, password=proxy_pass)
+
+        try:
+            sem = cfg_data['Options']['SEM']
+        except KeyError:
+            sem = self.SEM
+
+        self.sem = asyncio.Semaphore(sem)
+
+        try:
+            ca_key = cfg_data['Options']['CAPath']
+        except KeyError:
+            ca_key = None
+
+        try:
+            verify_ssl = cfg_data['Options']['VerifySSL']
+        except KeyError:
+            verify_ssl = True
+
+        if ca_key:
+            self.ssl = create_default_context(purpose=Purpose.CLIENT_AUTH, capath=ca_key)
+        else:
+            self.ssl = verify_ssl
+
+        try:
+            if cache_type := cfg_data['Cache']['Type']:
+                if cache_path := cfg_data['Cache']['Path']:
+                    if cache_type == 'cache':
+                        self.cache = dc.Cache(cache_path)
+                    elif cache_type == 'fanout_cache':
+                        self.cache = dc.FanoutCache(cache_path)
+                    elif cache_type == 'deque':
+                        self.cache = dc.Deque(cache_path)
+                    elif cache_type == 'index':
+                        self.cache = dc.Index(cache_path)
+                    else:
+                        logger.error(f'Invalid cache type: {cache_type}\n->Must be one of: cache|fanout_cache|deque|index')
+                        raise NotImplementedError
+        except KeyError:
+            self.cache = None
+
+    def session_config(self, cfg: dict) -> NoReturn:
         # Auth
-        username = session_config['Auth'].pop('Username', None)
-        if env_username := getenv('Auth_Username'):
-            username = env_username
-        password = session_config['Auth'].pop('Password', None)
-        if env_password := getenv('Auth_Password'):
-            password = env_password
+        try:
+            username = cfg['Auth']['Username']
+        except KeyError:
+            username = None
 
-        if username:
+        try:
+            password = cfg['Auth']['Password']
+        except KeyError:
+            password = None
+
+        if username or password:
             auth = aio.BasicAuth(login=username, password=password)
         else:
             auth = None
 
         # Cookies; Can't be overwridden by env_vars; Must be a dict
         try:
-            cookies = session_config['Cache']['Cookies']
+            cookies = cfg['Cache']['Cookies']
         except (KeyError, TypeError):
             cookies = None
 
         # Cookie Jar
-        cookie_jar = aio.CookieJar(unsafe=session_config['Options'].pop('CookieJar_Unsafe', None) or False)
+        try:
+            cookie_jar_unsafe = cfg['Options']['CookieJar_Unsafe']
+        except KeyError:
+            cookie_jar_unsafe = False
 
         # Headers
-        auth_hdr = session_config['Auth'].pop('Header', None)
-        if env_hdr := getenv('Auth_Header'):
-            auth_hdr = env_hdr
+        try:
+            auth_hdr = cfg['Auth']['Header']
+        except KeyError:
+            auth_hdr = None
 
-        auth_tkn = session_config['Auth'].pop('Token', None)
-        if env_tkn := getenv('Auth_Token'):
-            auth_tkn = env_tkn
+        try:
+            auth_tkn = cfg['Auth']['Token']
+        except KeyError:
+            auth_tkn = None
+
+        try:
+            content_type = cfg['Options']['Content_type']
+        except KeyError:
+            content_type = 'application/json; charset=utf-8'
 
         if auth_hdr and auth_tkn:
-            hdrs = {**self.HDR, session_config['Auth']['Header']: session_config['Auth']['Token']}
+            hdrs = {'Content-Type': content_type, auth_hdr: auth_tkn}
         else:
             hdrs = self.HDR
 
-        # JSON Serialize
-        try:
-            jsn = session_config['Options']['JSON_Serialize']
-            if env_jsn := getenv('Options_JSONSerialize'):
-                jsn = env_jsn
-        except (KeyError, TypeError):
-            jsn = rapidjson.dumps
-
         self.session = aio.ClientSession(auth=auth,
                                          cookies=cookies,
-                                         cookie_jar=cookie_jar,
+                                         cookie_jar=aio.CookieJar(unsafe=cookie_jar_unsafe),
                                          headers=hdrs,
-                                         json_serialize=jsn)
+                                         json_serialize=rapidjson.dumps)
 
     @staticmethod
     async def request_debug(response: aio.ClientResponse) -> str:

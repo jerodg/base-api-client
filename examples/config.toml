@@ -1,4 +1,4 @@
-#Bricata API Client: Example Configuration
+#Base API Client: Example Configuration
 #Copyright © 2019 Jerod Gawne <https://github.com/jerodg/>
 
 #This program is free software: you can redistribute it and/or modify
@@ -40,8 +40,8 @@
     VerifySSL = true
     Debug = false
     SEM = 15
-    JSON_Serialize = "rapidjson.dumps"
     Content_Type = "application/json; charset=utf-8"
+    CookieJar_Unsafe = false  # Required for IP-based URI's
 
 [Proxy]  # Optional
     URI = ""
