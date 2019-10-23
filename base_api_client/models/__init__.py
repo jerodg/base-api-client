@@ -1,5 +1,5 @@
 #!/usr/bin/env python3.8
-"""Base API Client: Init
+"""Base API Client: Models.Init
 Copyright © 2019 Jerod Gawne <https://github.com/jerodg/>
 
 This program is free software: you can redistribute it and/or modify
@@ -20,5 +20,3 @@ If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 
 from base_api_client.models.record import Record
 from base_api_client.models.results import Results
-
-__all__ = [Record, Results]

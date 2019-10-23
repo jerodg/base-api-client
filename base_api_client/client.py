@@ -41,6 +41,7 @@ logger = logging.getLogger(__name__)
 
 # todo: convert request debug to template
 # todo: save cookie jar
+# todo: Finish tests
 
 
 class BaseApiClient(object):
@@ -71,13 +72,13 @@ class BaseApiClient(object):
         """
 
         Args:
-            cfg_data (Union[str, dict): str; path to config file [toml|json]
-                                   dict; dictionary matching config example
+            cfg_data (Union[str, dct): str; path to config file [toml|json]
+                                   dct; dictionary matching config example
                 Values expressed in example config can be overridden by OS
                 environment variables.
 
         Returns:
-            cfg (dict)
+            cfg (dct)
         """
         if type(cfg_data) is dict:
             cfg = cfg_data
@@ -224,7 +225,7 @@ class BaseApiClient(object):
         else:
             auth = None
 
-        # Cookies; Can't be overwridden by env_vars; Must be a dict
+        # Cookies; Can't be overwridden by env_vars; Must be a dct
         try:
             cookies = cfg['Cache']['Cookies']
         except (KeyError, TypeError):
@@ -261,7 +262,8 @@ class BaseApiClient(object):
                                          cookies=cookies,
                                          cookie_jar=aio.CookieJar(unsafe=cookie_jar_unsafe),
                                          headers=hdrs,
-                                         json_serialize=rapidjson.dumps)
+                                         json_serialize=rapidjson.dumps,
+                                         timeout=aio.ClientTimeout(total=300))
 
     @staticmethod
     async def request_debug(response: aio.ClientResponse) -> str:
@@ -287,9 +289,9 @@ class BaseApiClient(object):
         """Process Results from aio.ClientRequest(s)
 
         Args:
-        results (List[Union[dict, aio.ClientResponse]]):
-        success (List[dict]):
-        failure (List[dict]):
+        results (List[Union[dct, aio.ClientResponse]]):
+        success (List[dct]):
+        failure (List[dct]):
         data_key (Optional[str]):
         cleanup (Optional[bool]): Default: True
             Removes raw results, Removes empty (None) keys, and Sorts Keys of each record.
@@ -376,9 +378,9 @@ class BaseApiClient(object):
             method (str): A valid HTTP Verb in [GET, POST]
             end_point (str): REST Endpoint; e.g. /devices/query
             request_id (str): Unique Identifier used to associate request with response
-            data (Optional[dict]):
-            json (Optional[dict]):
-            params (Optional[Union[List[tuple], dict, MultiDict]]):
+            data (Optional[dct]):
+            json (Optional[dct]):
+            params (Optional[Union[List[tuple], dct, MultiDict]]):
             debug (Optional[bool]):
 
         References:

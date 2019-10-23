@@ -20,6 +20,9 @@ If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 
 import logging
 from dataclasses import dataclass
+from typing import Optional
+
+from copy import deepcopy
 
 logger = logging.getLogger(__name__)
 
@@ -32,25 +35,25 @@ class Record:
         for k, v in self.__dict__.items():
             self.__dict__[k] = None
 
-    def dict(self, d: dict = None, sort_order: str = None, cleanup: bool = True) -> dict:
+    def dict(self, cleanup: Optional[bool] = True, dct: Optional[dict] = None, sort_order: Optional[str] = 'asc') -> dict:
         """
         Args:
-            d (Optional[dict]):
-            sort_order (Optional[str]): ASC | DESC
             cleanup (Optional[bool]):
+            dct (Optional[dict]):
+            sort_order (Optional[str]): ASC | DESC
 
         Returns:
-            d (dict):"""
-        if not d:
-            d = self.__dict__
+            dict (dict):"""
+        if not dct:
+            dct = deepcopy(self.__dict__)
 
         if cleanup:
-            d = {k: v for k, v in d.items() if v is not None}
+            dct = {k: v for k, v in dct.items() if v is not None}
 
         if sort_order:
-            d = sorted(d, key=d.__getitem__, reverse=True if sort_order.lower() == 'desc' else False)
+            dct = sorted(dct, key=dct.__getitem__, reverse=True if sort_order.lower() == 'desc' else False)
 
-        return d
+        return dct
 
     def load(self, **entries):
         """Populates dataclass"
