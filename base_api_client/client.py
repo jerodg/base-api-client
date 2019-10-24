@@ -191,23 +191,6 @@ class BaseApiClient(object):
         else:
             self.ssl = verify_ssl
 
-        try:
-            if cache_type := cfg_data['Cache']['Type']:
-                if cache_path := cfg_data['Cache']['Path']:
-                    if cache_type == 'cache':
-                        self.cache = dc.Cache(cache_path)
-                    elif cache_type == 'fanout_cache':
-                        self.cache = dc.FanoutCache(cache_path)
-                    elif cache_type == 'deque':
-                        self.cache = dc.Deque(cache_path)
-                    elif cache_type == 'index':
-                        self.cache = dc.Index(cache_path)
-                    else:
-                        logger.error(f'Invalid cache type: {cache_type}\n->Must be one of: cache|fanout_cache|deque|index')
-                        raise NotImplementedError
-        except KeyError:
-            self.cache = None
-
     def session_config(self, cfg: dict) -> NoReturn:
         # Auth
         try:

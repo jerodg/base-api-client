@@ -27,6 +27,16 @@ from copy import deepcopy
 logger = logging.getLogger(__name__)
 
 
+def sort_dict(dct: dict, reverse: Optional[bool] = False):
+    items = [[k, v] for k, v in sorted(dct.items(), key=lambda x: x[0], reverse=reverse)]
+
+    for item in items:
+        if isinstance(item[1], dict):
+            item[1] = sort_dict(item[1], reverse=reverse)
+
+    return dict(items)
+
+
 @dataclass
 class Record:
     """Generic Record"""
@@ -51,7 +61,8 @@ class Record:
             dct = {k: v for k, v in dct.items() if v is not None}
 
         if sort_order:
-            dct = sorted(dct, key=dct.__getitem__, reverse=True if sort_order.lower() == 'desc' else False)
+            # dct = sorted(dct, key=dct.__getitem__, reverse=True if sort_order.lower() == 'desc' else False)
+            dct = sort_dict(dct, reverse=True if sort_order.lower() == 'desc' else False)
 
         return dct
 
