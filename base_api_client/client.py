@@ -32,7 +32,6 @@ import rapidjson
 import toml
 from multidict import MultiDict
 from os import getenv
-from tenacity import after_log, before_sleep_log, retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
 
 from base_api_client.models import Results
 
