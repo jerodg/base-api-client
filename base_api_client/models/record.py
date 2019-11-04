@@ -85,7 +85,7 @@ class Record:
 
     @property
     def data_key(self):
-        return '/'
+        return None
 
 
 if __name__ == '__main__':
