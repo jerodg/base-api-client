@@ -48,7 +48,3 @@
     Port = ""
     Username = ""
     Password = ""
-
-[Cache]
-    Path = ""  # Full-path to cache folder
-    Type = ""  # cache|fanout_cache|deque|index

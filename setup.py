@@ -51,7 +51,6 @@ def main() -> NoReturn:
           install_requires=['aiodns',
                             'aiohttp',
                             'cchardet',
-                            'diskcache',
                             'python-rapidjson',
                             'tenacity',
                             'toml'],
@@ -71,7 +70,7 @@ def main() -> NoReturn:
           setup_requires=[] + ['pytest-runner'] if {'pytest', 'test', 'ptr'}.intersection(sys.argv) else [],
           tests_require=['pytest', 'pytest-asyncio'],
           url='https://pypi.org/project/base-api-client/',
-          version='0!0.10.2',
+          version='0!0.10.3',
           zip_safe=True)
 
 

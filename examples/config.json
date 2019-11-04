@@ -21,9 +21,5 @@
     "Port": "",
     "Username": "",
     "Password": ""
-  },
-  "Cache": {
-    "Path": "",
-    "Type": ""
   }
 }

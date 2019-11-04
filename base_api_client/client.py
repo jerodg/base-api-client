@@ -27,11 +27,11 @@ from typing import List, NoReturn, Optional, Union
 from uuid import uuid4
 
 import aiohttp as aio
-import diskcache as dc
 import rapidjson
 import toml
 from multidict import MultiDict
 from os import getenv
+from tenacity import after_log, before_sleep_log, retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
 
 from base_api_client.models import Results
 
@@ -48,7 +48,6 @@ class BaseApiClient(object):
     SEM: int = 15  # This defines the number of parallel requests to make.
 
     def __init__(self, cfg: Optional[Union[str, dict]] = None):
-        self.cache: Union[dc.Cache, dc.FanoutCache, dc.Deque, dc.Index, None] = None
         self.debug: bool = False
         self.cfg: Union[dict, None] = None
         self.proxy: Union[str, None] = None

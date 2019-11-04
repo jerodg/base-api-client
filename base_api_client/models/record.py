@@ -20,7 +20,7 @@ If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 
 import logging
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, List, Optional
 
 from copy import deepcopy
 
@@ -28,7 +28,15 @@ logger = logging.getLogger(__name__)
 
 
 def sort_dict(dct: dict, reverse: Optional[bool] = False):
-    items = [[k, v] for k, v in sorted(dct.items(), key=lambda x: x[0], reverse=reverse)]
+    """Sort a dictionary, recursively, by keys.
+
+    Args:
+        dct (dict):
+        reverse (bool):
+
+    Returns:
+        dct (dict)"""
+    items: List[List[Any]] = [[k, v] for k, v in sorted(dct.items(), key=lambda x: x[0], reverse=reverse)]
 
     for item in items:
         if isinstance(item[1], dict):
@@ -61,7 +69,6 @@ class Record:
             dct = {k: v for k, v in dct.items() if v is not None}
 
         if sort_order:
-            # dct = sorted(dct, key=dct.__getitem__, reverse=True if sort_order.lower() == 'desc' else False)
             dct = sort_dict(dct, reverse=True if sort_order.lower() == 'desc' else False)
 
         return dct
@@ -71,6 +78,14 @@ class Record:
         Notes:
             Only works on top-level dicts"""
         self.__dict__.update(entries)
+
+    @property
+    def end_point(self):
+        return '/'
+
+    @property
+    def data_key(self):
+        return '/'
 
 
 if __name__ == '__main__':
