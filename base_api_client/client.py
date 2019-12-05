@@ -26,11 +26,13 @@ from ssl import create_default_context, Purpose, SSLContext
 from typing import List, NoReturn, Optional, Union
 from uuid import uuid4
 
+import aiofiles
 import aiohttp as aio
 import rapidjson
 import toml
 from multidict import MultiDict
 from os import getenv
+from os.path import realpath
 from tenacity import after_log, before_sleep_log, retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
 
 from base_api_client.models import Results
@@ -343,6 +345,12 @@ class BaseApiClient(object):
 
         return results
 
+    @staticmethod
+    async def file_streamer(file_path):
+        async with aiofiles.open(realpath(file_path), 'rb') as f:
+            while chunk := await f.read(1024):
+                yield chunk
+
     @retry(retry=retry_if_exception_type(aio.ClientError),
            wait=wait_random_exponential(multiplier=1.25, min=3, max=60),
            after=after_log(logger, logging.DEBUG),
@@ -350,12 +358,14 @@ class BaseApiClient(object):
            before_sleep=before_sleep_log(logger, logging.WARNING))
     async def request(self, method: str, end_point: str,
                       request_id: Optional[str] = None,
-                      data: Optional[dict] = None,
+                      data: Optional[Union[dict, aio.formdata]] = None,
                       json: Optional[dict] = None,
                       params: Optional[Union[List[tuple], dict, MultiDict]] = None,
+                      file: Optional[str] = None,
                       debug: Optional[bool] = False) -> dict:
         """Multi-purpose aiohttp request function
         Args:
+            file (Optional[str]): A valid file-path
             method (str): A valid HTTP Verb in [GET, POST]
             end_point (str): REST Endpoint; e.g. /devices/query
             request_id (str): Unique Identifier used to associate request with response
@@ -369,9 +379,15 @@ class BaseApiClient(object):
 
         Raises:
             NotImplementedError
+
+        Returns:
+            dict
         """
         if not request_id:
             request_id = uuid4().hex
+
+        if file:
+            data = {**data, 'file': self.file_streamer(file)}
 
         async with self.sem:
             if method == 'get':

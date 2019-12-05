@@ -19,6 +19,7 @@ wheel = "*"
 
 [packages]
 aiodns = "*"
+aiofiles = "*"
 aiohttp = "*"
 cchardet = "*"
 python-rapidjson = "*"
