@@ -1,4 +1,4 @@
-#Bricata API Client: Example Configuration
+#Base API Client: Example Configuration
 #Copyright © 2019 Jerod Gawne <https://github.com/jerodg/>
 
 #This program is free software: you can redistribute it and/or modify
@@ -17,6 +17,15 @@
 #You should have received a copy of the SSPL along with this program.
 #If not, see <https://www.mongodb.com/licensing/server-side-public-license>.
 
+# If you would rather use environment variables; Combine levels with underscore.
+# e.g. export Auth_Username = ""
+# Keys defined here can be overridden by environment variables; Custom config
+# options cannot.
+
+# You can add any additional configuration options you want available in your
+# program here. Everything excepting URI_BASE is optional; Values specified
+# below are defaults.
+
 [Auth]
     Username = ""
     Password = ""
@@ -29,6 +38,10 @@
 [Options]
     CAPath = ""  # Full path to Certificate Authority file
     VerifySSL = true
+    Debug = false
+    SEM = 15
+    Content_Type = "application/json; charset=utf-8"
+    CookieJar_Unsafe = false  # Required for IP-based URI's
 
 [Proxy]  # Optional
     URI = ""

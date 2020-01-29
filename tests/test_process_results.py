@@ -22,7 +22,7 @@ import time
 
 import aiohttp as aio
 import pytest
-import ujson
+import rapidjson
 from os import getenv
 
 from base_api_client import BaseApiClient, bprint, Results, tprint
@@ -35,8 +35,9 @@ async def test_process_results():
     bprint('Test: Process Results')
 
     async with BaseApiClient(cfg=f'{getenv("CFG_HOME")}/base_api_client.toml') as bac:
-        async with aio.ClientSession(headers=bac.HDR, json_serialize=ujson.dumps) as session:
-            tasks = [asyncio.create_task(bac.request(method='get', end_point='http://www.omdbapi.com', session=session,
+        async with aio.ClientSession(headers=bac.HDR, json_serialize=rapidjson.dumps) as session:
+            tasks = [asyncio.create_task(bac.request(method='get',
+                                                     end_point='http://www.omdbapi.com',
                                                      params={'apikey': '42da97d5', 't': 'Blade Runner'}))]
             results = Results(data=await asyncio.gather(*tasks))
 

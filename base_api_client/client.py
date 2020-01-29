@@ -18,19 +18,21 @@ copies or substantial portions of the Software.
 You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 
-import json
+import asyncio
 import logging
 from asyncio import Semaphore
 from json.decoder import JSONDecodeError
-from ssl import create_default_context, Purpose
+from ssl import create_default_context, Purpose, SSLContext
 from typing import List, NoReturn, Optional, Union
 from uuid import uuid4
 
+import aiofiles
 import aiohttp as aio
+import rapidjson
 import toml
-import ujson
-from diskcache import Index
 from multidict import MultiDict
+from os import getenv
+from os.path import realpath
 from tenacity import after_log, before_sleep_log, retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
 
 from base_api_client.models import Results
@@ -38,26 +40,27 @@ from base_api_client.models import Results
 logger = logging.getLogger(__name__)
 
 
+# todo: convert request debug to template
+# todo: save cookie jar
+# todo: Finish tests
+
+
 class BaseApiClient(object):
     HDR: dict = {'Content-Type': 'application/json; charset=utf-8'}
-    SEM: int = 15  # This defines the number of parallel async requests to make.
+    SEM: int = 15  # This defines the number of parallel requests to make.
 
-    def __init__(self, cfg: Optional[Union[str, dict]] = None,
-                 sem: Optional[int] = None,
-                 index_location: Optional[str] = None,
-                 session_config: dict = {}):
-        self.sem: Semaphore = Semaphore(sem or self.SEM)
-        self.header: Union[dict, None] = None
+    def __init__(self, cfg: Optional[Union[str, dict]] = None):
+        self.debug: bool = False
+        self.cfg: Union[dict, None] = None
         self.proxy: Union[str, None] = None
         self.proxy_auth: Union[aio.BasicAuth, None] = None
-        self.ssl = None
-        self.auth = None
-        self.cfg: Union[dict, None] = None
-        self.__load_config(cfg=cfg)
-        self.session: aio.ClientSession = self.__session_config(session_config)
+        self.sem: Union[Semaphore, None] = None
+        self.session: Union[aio.ClientSession, None] = None
+        self.ssl: Union[SSLContext, None] = None
 
-        if index_location:
-            self.index = Index(index_location)
+        cfg = self.__load_config_data(cfg)
+        self.process_config(cfg)
+        self.session_config(cfg)
 
     async def __aenter__(self):
         return self
@@ -65,68 +68,191 @@ class BaseApiClient(object):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.session.close()
 
-    def __load_config(self, cfg) -> NoReturn:
-        if type(cfg) is dict:
-            self.cfg = cfg
-        elif type(cfg) is str:
-            if cfg.endswith('.toml'):
-                self.cfg = toml.load(cfg)
-            elif cfg.endswith('.json'):
-                self.cfg = ujson.loads(open(cfg).read(), ensure_ascii=False)
+    def __load_config_data(self, cfg_data: Union[str, dict]) -> dict:
+        """
+
+        Args:
+            cfg_data (Union[str, dct): str; path to config file [toml|json]
+                                   dct; dictionary matching config example
+                Values expressed in example config can be overridden by OS
+                environment variables.
+
+        Returns:
+            cfg (dct)
+        """
+        if type(cfg_data) is dict:
+            cfg = cfg_data
+        elif type(cfg_data) is str:
+            if cfg_data.endswith('.toml'):
+                cfg = toml.load(cfg_data)
+            elif cfg_data.endswith('.json'):
+                cfg = rapidjson.loads(open(cfg_data).read(), ensure_ascii=False)
             else:
-                logger.error(f'Unknown configuration file type: {cfg.split(".")[1]}\n-> Valid Types: .toml | .json')
+                logger.error(f'Unknown configuration file type: {cfg_data.split(".")[1]}\n-> Valid Types: .toml | .json')
                 raise NotImplementedError
-        elif cfg is None:
-            self.cfg = None
+        else:
+            cfg = None
 
-        if self.cfg:
-            proxy_uri = self.cfg['Proxy'].pop('URI', None)
-            if proxy_uri:
-                proxy_port = self.cfg['Proxy'].pop('Port')
-                proxy_user = self.cfg['Proxy'].pop('Username')
-                proxy_pass = self.cfg['Proxy'].pop('Password')
-                self.proxy = f'{proxy_uri}:{proxy_port}'
-                self.proxy_auth = aio.BasicAuth(login=proxy_user, password=proxy_pass)
+        if env_auth_user := getenv('Auth_Username'):
+            cfg['Auth']['Username'] = env_auth_user
 
-            ssl_path = self.cfg['Options'].pop('CAPath', None)
-            if ssl_path:
-                self.ssl = create_default_context(purpose=Purpose.CLIENT_AUTH, capath=ssl_path)
-            else:
-                self.ssl = self.cfg['Options'].pop('VerifySSL', True)
+        if env_auth_pass := getenv('Auth_Password'):
+            cfg['Auth']['Password'] = env_auth_pass
 
-            if self.cfg['Auth']:
-                self.auth = aio.BasicAuth(login=self.cfg['Auth']['Username'], password=self.cfg['Auth']['Password'])
+        if env_auth_header := getenv('Auth_Header'):
+            cfg['Auth']['Header'] = env_auth_header
 
-    def __session_config(self, session_config):
+        if env_auth_token := getenv('Auth_Token'):
+            cfg['Auth']['Token'] = env_auth_token
+
+        if env_uri_base := getenv('URI_Base'):
+            cfg['URI']['Base'] = env_uri_base
+
+        if env_opt_ca := getenv('Options_CAPath'):
+            cfg['Options']['CAPath'] = env_opt_ca
+
+        if env_opt_ssl := getenv('Options_VerifySSL'):
+            cfg['Options']['VerifySS:'] = env_opt_ssl
+
+        if env_opt_dbg := getenv('Options_Debug'):
+            cfg['Options']['Ddebug'] = env_opt_dbg
+
+        if env_opt_sem := getenv('Options_SEM'):
+            cfg['Options']['SEM'] = env_opt_sem
+
+        if env_prxy_uri := getenv('Proxy_URI'):
+            cfg['Proxy']['URI'] = env_prxy_uri
+
+        if env_prxy_port := getenv('Proxy_Port'):
+            cfg['Proxy']['Port'] = env_prxy_port
+
+        if env_prxy_user := getenv('Proxy_Username'):
+            cfg['Proxy']['Username'] = env_prxy_user
+
+        if env_prxy_pass := getenv('Proxy_Password'):
+            cfg['Proxy']['Password'] = env_prxy_pass
+
+        self.cfg = cfg
+
+        return cfg
+
+    def process_config(self, cfg_data: dict):
         try:
-            hdrs = {**self.HDR, self.cfg['Auth']['Header']: self.cfg['Auth']['Token']}
-        except (KeyError, TypeError):
-            hdrs = self.HDR
+            if cfg_data['Options']['Debug']:
+                self.debug = True
+        except KeyError:
+            self.debug = False
+
         try:
-            jsn = session_config['json_serialize']
-        except (KeyError, TypeError):
-            jsn = json.dumps
+            proxy_uri = cfg_data['Proxy']['URI']
+        except KeyError:
+            proxy_uri = None
+
         try:
-            cookies = session_config['cookies']
+            proxy_port = cfg_data['Proxy']['Port']
+        except KeyError:
+            proxy_port = ''
+
+        try:
+            proxy_user = cfg_data['Proxy']['Username']
+        except KeyError:
+            proxy_user = None
+
+        try:
+            proxy_pass = cfg_data['Proxy']['Password']
+        except KeyError:
+            proxy_pass = None
+
+        if proxy_uri:
+            self.proxy = f'{proxy_uri}{":" if proxy_port else ""}{proxy_port}'
+
+        if proxy_user:
+            self.proxy_auth = aio.BasicAuth(login=proxy_user, password=proxy_pass)
+
+        try:
+            sem = cfg_data['Options']['SEM']
+        except KeyError:
+            sem = self.SEM
+
+        self.sem = asyncio.Semaphore(sem)
+
+        try:
+            ca_key = cfg_data['Options']['CAPath']
+        except KeyError:
+            ca_key = None
+
+        try:
+            verify_ssl = cfg_data['Options']['VerifySSL']
+        except KeyError:
+            verify_ssl = True
+
+        if ca_key:
+            self.ssl = create_default_context(purpose=Purpose.CLIENT_AUTH, capath=ca_key)
+        else:
+            self.ssl = verify_ssl
+
+    def session_config(self, cfg: dict) -> NoReturn:
+        # Auth
+        try:
+            username = cfg['Auth']['Username']
+        except KeyError:
+            username = None
+
+        try:
+            password = cfg['Auth']['Password']
+        except KeyError:
+            password = None
+
+        if username or password:
+            auth = aio.BasicAuth(login=username, password=password)
+        else:
+            auth = None
+
+        # Cookies; Can't be overwridden by env_vars; Must be a dct
+        try:
+            cookies = cfg['Cache']['Cookies']
         except (KeyError, TypeError):
             cookies = None
-        try:
-            cookie_jar = session_config['cookie_jar']
-        except (KeyError, TypeError):
-            cookie_jar = None
 
-        return aio.ClientSession(cookies=cookies,
-                                 cookie_jar=cookie_jar,
-                                 headers=hdrs,
-                                 auth=self.auth,
-                                 json_serialize=jsn)
+        # Cookie Jar
+        try:
+            cookie_jar_unsafe = cfg['Options']['CookieJar_Unsafe']
+        except KeyError:
+            cookie_jar_unsafe = False
+
+        # Headers
+        try:
+            auth_hdr = cfg['Auth']['Header']
+        except KeyError:
+            auth_hdr = None
+
+        try:
+            auth_tkn = cfg['Auth']['Token']
+        except KeyError:
+            auth_tkn = None
+
+        try:
+            content_type = cfg['Options']['Content_type']
+        except KeyError:
+            content_type = 'application/json; charset=utf-8'
+
+        if auth_hdr and auth_tkn:
+            hdrs = {'Content-Type': content_type, auth_hdr: auth_tkn}
+        else:
+            hdrs = self.HDR
+
+        self.session = aio.ClientSession(auth=auth,
+                                         cookies=cookies,
+                                         cookie_jar=aio.CookieJar(unsafe=cookie_jar_unsafe),
+                                         headers=hdrs,
+                                         json_serialize=rapidjson.dumps,
+                                         timeout=aio.ClientTimeout(total=300))
 
     @staticmethod
     async def request_debug(response: aio.ClientResponse) -> str:
-        # todo: convert to template
         hdr = '\n\t\t'.join(f'{k}: {v}' for k, v in response.headers.items())
         try:
-            j = ujson.dumps(await response.json(content_type=None), ensure_ascii=False)
+            j = rapidjson.dumps(await response.json(content_type=None), ensure_ascii=False)
             t = None
         except JSONDecodeError:
             j = None
@@ -146,43 +272,43 @@ class BaseApiClient(object):
         """Process Results from aio.ClientRequest(s)
 
         Args:
-        results (List[Union[dict, aio.ClientResponse]]):
-        success (List[dict]):
-        failure (List[dict]):
+        results (List[Union[dct, aio.ClientResponse]]):
+        success (List[dct]):
+        failure (List[dct]):
         data_key (Optional[str]):
         cleanup (Optional[bool]): Default: True
             Removes raw results, Removes empty (None) keys, and Sorts Keys of each record.
-        sort_field (Optional[str]): Top level dictionary key to sort on
+        sort_field (Optional[str]): Top incident_level dictionary key to sort on
         sort_order (Optional[str]): Direction to sort ASC | DESC (any case)
             Performs generic sort if sort_field not specified.
 
         Returns:
-            res (Results): """
+            results (Results): """
         for result in results.data:
             rid = {'request_id': result['request_id']}
             status = result['response'].status
 
-            if result['response'].headers['Content-Type'].startswith('application/jwt'):
-                response = {'token': await result['response'].text(encoding='utf-8'), 'token_type': 'Bearer'}
-
-            elif result['response'].headers['Content-Type'].startswith('application/json'):
-                response = await result['response'].json(encoding='utf-8', loads=ujson.loads)
-
-            elif result['response'].headers['Content-Type'].startswith('application/javascript'):
-                response = await result['response'].json(encoding='utf-8', loads=ujson.loads, content_type='application/javascript')
-
-            elif result['response'].headers['Content-Type'].startswith('text/javascript'):
-                response = await result['response'].json(encoding='utf-8', loads=ujson.loads, content_type='text/javascript')
-
-            elif result['response'].headers['Content-Type'].startswith('text/plain'):
+            try:
+                if result['response'].headers['Content-Type'].startswith('application/jwt'):
+                    response = {'token': await result['response'].text(encoding='utf-8'), 'token_type': 'Bearer'}
+                elif result['response'].headers['Content-Type'].startswith('application/json'):
+                    response = await result['response'].json(encoding='utf-8', loads=rapidjson.loads)
+                elif result['response'].headers['Content-Type'].startswith('application/javascript'):
+                    response = await result['response'].json(encoding='utf-8', loads=rapidjson.loads,
+                                                             content_type='application/javascript')
+                elif result['response'].headers['Content-Type'].startswith('text/javascript'):
+                    response = await result['response'].json(encoding='utf-8', loads=rapidjson.loads,
+                                                             content_type='text/javascript')
+                elif result['response'].headers['Content-Type'].startswith('text/plain'):
+                    response = {'text_plain': await result['response'].text(encoding='utf-8')}
+                elif result['response'].headers['Content-Type'].startswith('text/html'):
+                    response = {'text_html': await result['response'].text(encoding='utf-8')}
+                else:
+                    logger.error(f'Content-Type: {result["response"].headers["Content-Type"]}, not currently handled.')
+                    raise NotImplementedError
+            except KeyError as ke:  # This shouldn't happen too often.
+                logger.warning(ke)
                 response = {'text_plain': await result['response'].text(encoding='utf-8')}
-
-            elif result['response'].headers['Content-Type'].startswith('text/html'):
-                response = {'text_html': await result['response'].text(encoding='utf-8')}
-
-            else:
-                logger.error(f'Content-Type: {result["response"].headers["Content-Type"]}, not currently handled.')
-                raise NotImplementedError
 
             if 200 <= status <= 299:
                 try:
@@ -219,6 +345,12 @@ class BaseApiClient(object):
 
         return results
 
+    @staticmethod
+    async def file_streamer(file_path):
+        async with aiofiles.open(realpath(file_path), 'rb') as f:
+            while chunk := await f.read(1024):
+                yield chunk
+
     @retry(retry=retry_if_exception_type(aio.ClientError),
            wait=wait_random_exponential(multiplier=1.25, min=3, max=60),
            after=after_log(logger, logging.DEBUG),
@@ -226,18 +358,20 @@ class BaseApiClient(object):
            before_sleep=before_sleep_log(logger, logging.WARNING))
     async def request(self, method: str, end_point: str,
                       request_id: Optional[str] = None,
-                      data: Optional[dict] = None,
+                      data: Optional[Union[dict, aio.formdata]] = None,
                       json: Optional[dict] = None,
                       params: Optional[Union[List[tuple], dict, MultiDict]] = None,
+                      file: Optional[str] = None,
                       debug: Optional[bool] = False) -> dict:
         """Multi-purpose aiohttp request function
         Args:
+            file (Optional[str]): A valid file-path
             method (str): A valid HTTP Verb in [GET, POST]
             end_point (str): REST Endpoint; e.g. /devices/query
             request_id (str): Unique Identifier used to associate request with response
-            data (Optional[dict]):
-            json (Optional[dict]):
-            params (Optional[Union[List[tuple], dict, MultiDict]]):
+            data (Optional[dct]):
+            json (Optional[dct]):
+            params (Optional[Union[List[tuple], dct, MultiDict]]):
             debug (Optional[bool]):
 
         References:
@@ -245,9 +379,15 @@ class BaseApiClient(object):
 
         Raises:
             NotImplementedError
+
+        Returns:
+            dict
         """
         if not request_id:
             request_id = uuid4().hex
+
+        if file:
+            data = {**data, 'file': self.file_streamer(file)}
 
         async with self.sem:
             if method == 'get':
@@ -284,7 +424,7 @@ class BaseApiClient(object):
                 logger.error(f'Request-Method: {method}, not currently handled.')
                 raise NotImplementedError
 
-            if debug:
+            if self.debug or debug:
                 print(await self.request_debug(response))
 
             try:

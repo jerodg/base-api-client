@@ -19,12 +19,12 @@ wheel = "*"
 
 [packages]
 aiodns = "*"
+aiofiles = "*"
 aiohttp = "*"
 cchardet = "*"
-diskcache = "*"
+python-rapidjson = "*"
 tenacity = "*"
 toml = "*"
-ujson = "*"
 
 [requires]
 python_version = "3.8"

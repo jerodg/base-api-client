@@ -22,4 +22,3 @@ from base_api_client.client import BaseApiClient
 from base_api_client.models.record import Record
 from base_api_client.models.results import Results
 from base_api_client.utils import bprint, tprint
-

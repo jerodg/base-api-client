@@ -15,6 +15,7 @@ SSPL for more details.
 You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 import logging
+import sys
 from typing import NoReturn
 
 from setuptools import find_packages, setup
@@ -40,7 +41,6 @@ def main() -> NoReturn:
                        'Operating System :: MacOS :: MacOS X',
                        'Operating System :: Microsoft :: Windows',
                        'Operating System :: POSIX',
-                       'Programming Language :: Python :: 3.7',
                        'Programming Language :: Python :: 3.8',
                        'Topic :: Utilities',
                        'Topic :: Internet',
@@ -51,9 +51,9 @@ def main() -> NoReturn:
           install_requires=['aiodns',
                             'aiohttp',
                             'cchardet',
+                            'python-rapidjson',
                             'tenacity',
-                            'toml',
-                            'ujson'],
+                            'toml'],
           keywords='base api client rest',
           license='Server Side Public License (SSPL)',
           long_description_content_type='text/markdown',
@@ -66,11 +66,11 @@ def main() -> NoReturn:
                         'Funding':       'https://www.paypal.me/jerodgawne',
                         'Say Thanks!':   'https://saythanks.io/to/jerodg',
                         'Source':        'https://github.com/jerodg/base-api-client'},
-          python_requires='>=3.7, <3.9',
-          setup_requires=['pytest-runner'],
+          python_requires='>=3.8, <3.9',
+          setup_requires=[] + ['pytest-runner'] if {'pytest', 'test', 'ptr'}.intersection(sys.argv) else [],
           tests_require=['pytest', 'pytest-asyncio'],
           url='https://pypi.org/project/base-api-client/',
-          version='0!0.8.4',
+          version='0!0.11.1',
           zip_safe=True)
 
 

@@ -20,8 +20,29 @@ If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 
 import logging
 from dataclasses import dataclass
+from typing import Any, List, Optional
+
+from copy import deepcopy
 
 logger = logging.getLogger(__name__)
+
+
+def sort_dict(dct: dict, reverse: Optional[bool] = False):
+    """Sort a dictionary, recursively, by keys.
+
+    Args:
+        dct (dict):
+        reverse (bool):
+
+    Returns:
+        dct (dict)"""
+    items: List[List[Any]] = [[k, v] for k, v in sorted(dct.items(), key=lambda x: x[0], reverse=reverse)]
+
+    for item in items:
+        if isinstance(item[1], dict):
+            item[1] = sort_dict(item[1], reverse=reverse)
+
+    return dict(items)
 
 
 @dataclass
@@ -32,31 +53,39 @@ class Record:
         for k, v in self.__dict__.items():
             self.__dict__[k] = None
 
-    def dict(self, d: dict = None, sort_order: str = None, cleanup: bool = True) -> dict:
+    def dict(self, cleanup: Optional[bool] = True, dct: Optional[dict] = None, sort_order: Optional[str] = 'asc') -> dict:
         """
         Args:
-            d (Optional[dict]):
-            sort_order (Optional[str]): ASC | DESC
             cleanup (Optional[bool]):
+            dct (Optional[dict]):
+            sort_order (Optional[str]): ASC | DESC
 
         Returns:
-            d (dict):"""
-        if not d:
-            d = self.__dict__
+            dict (dict):"""
+        if not dct:
+            dct = deepcopy(self.__dict__)
 
         if cleanup:
-            d = {k: v for k, v in d.items() if v is not None}
+            dct = {k: v for k, v in dct.items() if v is not None}
 
         if sort_order:
-            d = sorted(d, key=d.__getitem__, reverse=True if sort_order.lower() == 'desc' else False)
+            dct = sort_dict(dct, reverse=True if sort_order.lower() == 'desc' else False)
 
-        return d
+        return dct
 
     def load(self, **entries):
         """Populates dataclass"
         Notes:
-            Only works on 1-level dicts"""
+            Only works on top-level dicts"""
         self.__dict__.update(entries)
+
+    @property
+    def end_point(self):
+        return '/'
+
+    @property
+    def data_key(self):
+        return None
 
 
 if __name__ == '__main__':
