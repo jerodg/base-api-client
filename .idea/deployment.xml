@@ -1,16 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="aims-prod: base-api-client">
+  <component name="PublishConfigData" autoUpload="Always" serverName="aims_prod: base-api-client">
     <serverData>
-      <paths name="aims-prod: base-api-client">
+      <paths name="aims_prod: base-api-client">
         <serverdata>
           <mappings>
-            <mapping deploy="/opt/sea/base-api-client" local="$PROJECT_DIR$" />
+            <mapping deploy="/opt/sea/base-api-client" local="$PROJECT_DIR$" web="/" />
           </mappings>
-          <excludedPaths>
-            <excludedPath path="/opt/sea/base-api-client/.venv" />
-            <excludedPath local="true" path="$PROJECT_DIR$/.idea" />
-          </excludedPaths>
         </serverdata>
       </paths>
     </serverData>

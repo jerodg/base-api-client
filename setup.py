@@ -67,10 +67,16 @@ def main() -> NoReturn:
                         'Say Thanks!':   'https://saythanks.io/to/jerodg',
                         'Source':        'https://github.com/jerodg/base-api-client'},
           python_requires='>=3.8, <3.9',
-          setup_requires=[] + ['pytest-runner'] if {'pytest', 'test', 'ptr'}.intersection(sys.argv) else [],
+          setup_requires=['aiodns',
+                          'aiofiles',
+                          'aiohttp',
+                          'cchardet',
+                          'python-rapidjson',
+                          'tenacity',
+                          'toml'] + ['pytest-runner'] if {'pytest', 'test', 'ptr'}.intersection(sys.argv) else [],
           tests_require=['pytest', 'pytest-asyncio'],
           url='https://pypi.org/project/base-api-client/',
-          version='0!0.11.1',
+          version='0!0.11.2',
           zip_safe=True)
 
 

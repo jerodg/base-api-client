@@ -35,14 +35,9 @@ from os import getenv
 from os.path import realpath
 from tenacity import after_log, before_sleep_log, retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
 
-from base_api_client.models import Results
+from base_api_client import Results
 
 logger = logging.getLogger(__name__)
-
-
-# todo: convert request debug to template
-# todo: save cookie jar
-# todo: Finish tests
 
 
 class BaseApiClient(object):

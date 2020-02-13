@@ -19,6 +19,6 @@ You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 
 from base_api_client.client import BaseApiClient
-from base_api_client.models.record import Record
+from base_api_client.models.record import Record, sort_dict
 from base_api_client.models.results import Results
 from base_api_client.utils import bprint, tprint
