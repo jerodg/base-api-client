@@ -4,10 +4,10 @@
 | _ \/ _` (_-</ -_)  / _ \|  _/| |  | (__| | / -_) ' \  _|
 |___/\__,_/__/\___| /_/ \_\_| |___|  \___|_|_\___|_||_\__|
 ```                                                                                                   
-![platform](https://img.shields.io/badge/Platform-Linux/Unix/Windows-blue.svg)
-![python](https://img.shields.io/badge/Python-3.6/7/8%2B-blue.svg)
+![platform](https://img.shields.io/badge/Platform-Linux/Mac/Windows-blue.svg)
+![python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)
 <a href="https://www.mongodb.com/licensing/server-side-public-license"><img src="https://img.shields.io/badge/License-SSPL-green.svg"></a>
-![0%](https://img.shields.io/badge/Coverage-0%25-red.svg)
+![0%](https://img.shields.io/badge/Coverage-0%68-red.svg)
 <a href="https://saythanks.io/to/jerodg"><img src="https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg"></a>
 
 
@@ -34,6 +34,21 @@ class SomeApiClient(BaseApiClient):
 
     def __aexit__(self, exc_type, exc_val, exc_tb):
         await BaseApiClient.__aexit__(self, exc_type, exc_val, exc_tb)
+```
+
+## Coverage
+```shell
+----------- coverage: platform linux, python 3.8.0-final-0 -----------
+Name                                 Stmts   Miss  Cover
+--------------------------------------------------------
+base_api_client/__init__.py              3      0   100%
+base_api_client/client.py              244     71    71%
+base_api_client/models/__init__.py       3      0   100%
+base_api_client/models/record.py        35     18    49%
+base_api_client/models/results.py       25     11    56%
+base_api_client/utils.py                23      7    70%
+--------------------------------------------------------
+TOTAL                                  333    107    68%
 ```
 
 ## Documentation
