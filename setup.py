@@ -68,7 +68,6 @@ def main() -> NoReturn:
                         'Source':        'https://github.com/jerodg/base-api-client'},
           python_requires='>=3.8, <3.9',
           setup_requires=['aiodns',
-                          'aiofiles',
                           'aiohttp',
                           'cchardet',
                           'python-rapidjson',
@@ -76,7 +75,7 @@ def main() -> NoReturn:
                           'toml'] + ['pytest-runner'] if {'pytest', 'test', 'ptr'}.intersection(sys.argv) else [],
           tests_require=['pytest', 'pytest-asyncio'],
           url='https://pypi.org/project/base-api-client/',
-          version='0!0.11.2',
+          version='0!0.12.0',
           zip_safe=True)
 
 

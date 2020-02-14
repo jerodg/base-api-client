@@ -21,12 +21,10 @@ import time
 
 import aiohttp as aio
 import pytest
-from os import getenv
 
 from base_api_client import BaseApiClient, bprint
 
 
-# todo: use autodidact test endpoint to test, rewrite to handle changes to function
 @pytest.mark.asyncio
 async def test_request_debug():
     ts = time.perf_counter()
@@ -34,7 +32,7 @@ async def test_request_debug():
 
     async with BaseApiClient() as bapi:
         async with aio.ClientSession() as session:
-            response = await session.get('https://pypi.org', proxy=getenv('PROXY'))
+            response = await session.get('https://pypi.org')
 
         results = await bapi.request_debug(response=response)
 

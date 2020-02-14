@@ -19,34 +19,34 @@ You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 import asyncio
 import time
+from os.path import realpath
+from uuid import uuid4
 
-import aiohttp as aio
 import pytest
-import rapidjson
-from os import getenv
 
-from base_api_client import BaseApiClient, bprint, Results, tprint
+from base_api_client import BaseApiClient, bprint, tprint
+from base_api_client.models import Results
 
 
-# todo: use autodidact test endpoint to test, rewrite to handle changes to function
 @pytest.mark.asyncio
 async def test_process_results():
     ts = time.perf_counter()
     bprint('Test: Process Results')
 
-    async with BaseApiClient(cfg=f'{getenv("CFG_HOME")}/base_api_client.toml') as bac:
-        async with aio.ClientSession(headers=bac.HDR, json_serialize=rapidjson.dumps) as session:
-            tasks = [asyncio.create_task(bac.request(method='get',
-                                                     end_point='http://www.omdbapi.com',
-                                                     params={'apikey': '42da97d5', 't': 'Blade Runner'}))]
-            results = Results(data=await asyncio.gather(*tasks))
+    async with BaseApiClient(cfg=realpath('./tests/data/process_results_config.toml')) as bac:
+        tasks = [asyncio.create_task(bac.request(method='get',
+                                                 end_point='/search/lists.json',
+                                                 request_id=uuid4().hex,
+                                                 params={'limit':  20,
+                                                         'q':      'book',
+                                                         'offset': 0}))]
+        results = Results(data=await asyncio.gather(*tasks))
 
         assert type(results) is Results
         assert results.success is not None
         assert not results.failure
-        processed_results = await bac.process_results(results)
-        tprint(processed_results)
 
-    # todo: test arguments (data_key, cleanup, sort_field, sort_order)
+        processed_results = await bac.process_results(results, data_key='docs')
+        tprint(processed_results, top=5)
 
     bprint(f'-> Completed in {(time.perf_counter() - ts):f} seconds.')

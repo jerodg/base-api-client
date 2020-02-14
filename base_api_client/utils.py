@@ -19,7 +19,7 @@ You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 from typing import Any, NoReturn, Optional, Union
 
-from base_api_client import Results
+from base_api_client.models import Results
 
 
 def bprint(message) -> NoReturn:

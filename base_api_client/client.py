@@ -17,11 +17,12 @@ copies or substantial portions of the Software.
 
 You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
-
 import asyncio
 import logging
 from asyncio import Semaphore
 from json.decoder import JSONDecodeError
+from os import getenv
+from os.path import realpath
 from ssl import create_default_context, Purpose, SSLContext
 from typing import List, NoReturn, Optional, Union
 from uuid import uuid4
@@ -31,11 +32,9 @@ import aiohttp as aio
 import rapidjson
 import toml
 from multidict import MultiDict
-from os import getenv
-from os.path import realpath
 from tenacity import after_log, before_sleep_log, retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
 
-from base_api_client import Results
+from .models import Results
 
 logger = logging.getLogger(__name__)
 
@@ -135,27 +134,27 @@ class BaseApiClient(object):
         try:
             if cfg_data['Options']['Debug']:
                 self.debug = True
-        except KeyError:
+        except (KeyError, TypeError):
             self.debug = False
 
         try:
             proxy_uri = cfg_data['Proxy']['URI']
-        except KeyError:
+        except (KeyError, TypeError):
             proxy_uri = None
 
         try:
             proxy_port = cfg_data['Proxy']['Port']
-        except KeyError:
+        except (KeyError, TypeError):
             proxy_port = ''
 
         try:
             proxy_user = cfg_data['Proxy']['Username']
-        except KeyError:
+        except (KeyError, TypeError):
             proxy_user = None
 
         try:
             proxy_pass = cfg_data['Proxy']['Password']
-        except KeyError:
+        except (KeyError, TypeError):
             proxy_pass = None
 
         if proxy_uri:
@@ -166,19 +165,19 @@ class BaseApiClient(object):
 
         try:
             sem = cfg_data['Options']['SEM']
-        except KeyError:
+        except (KeyError, TypeError):
             sem = self.SEM
 
         self.sem = asyncio.Semaphore(sem)
 
         try:
             ca_key = cfg_data['Options']['CAPath']
-        except KeyError:
+        except (KeyError, TypeError):
             ca_key = None
 
         try:
             verify_ssl = cfg_data['Options']['VerifySSL']
-        except KeyError:
+        except (KeyError, TypeError):
             verify_ssl = True
 
         if ca_key:
@@ -190,12 +189,12 @@ class BaseApiClient(object):
         # Auth
         try:
             username = cfg['Auth']['Username']
-        except KeyError:
+        except (KeyError, TypeError):
             username = None
 
         try:
             password = cfg['Auth']['Password']
-        except KeyError:
+        except (KeyError, TypeError):
             password = None
 
         if username or password:
@@ -212,23 +211,23 @@ class BaseApiClient(object):
         # Cookie Jar
         try:
             cookie_jar_unsafe = cfg['Options']['CookieJar_Unsafe']
-        except KeyError:
+        except (KeyError, TypeError):
             cookie_jar_unsafe = False
 
         # Headers
         try:
             auth_hdr = cfg['Auth']['Header']
-        except KeyError:
+        except (KeyError, TypeError):
             auth_hdr = None
 
         try:
             auth_tkn = cfg['Auth']['Token']
-        except KeyError:
+        except (KeyError, TypeError):
             auth_tkn = None
 
         try:
             content_type = cfg['Options']['Content_type']
-        except KeyError:
+        except (KeyError, TypeError):
             content_type = 'application/json; charset=utf-8'
 
         if auth_hdr and auth_tkn:
@@ -353,7 +352,7 @@ class BaseApiClient(object):
            before_sleep=before_sleep_log(logger, logging.WARNING))
     async def request(self, method: str, end_point: str,
                       request_id: Optional[str] = None,
-                      data: Optional[Union[dict, aio.formdata]] = None,
+                      data: Optional[Union[dict, aio.FormData]] = None,
                       json: Optional[dict] = None,
                       params: Optional[Union[List[tuple], dict, MultiDict]] = None,
                       file: Optional[str] = None,
