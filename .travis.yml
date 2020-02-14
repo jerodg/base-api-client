@@ -1,4 +1,4 @@
-#Bricata API Client: tox.ini
+#Base API Client: Travis Configuration
 #Copyright © 2019 Jerod Gawne <https://github.com/jerodg/>
 
 #This program is free software: you can redistribute it and/or modify
@@ -35,4 +35,4 @@ jobs:
 install: pip3 install --upgrade pip  # all three OSes agree about 'pip3'
 # 'python' points to Python 2.7 on macOS but points to Python 3.8 on Linux and Windows
 # 'python3' is a 'command not found' error on Windows but 'py' works on Windows only
-script: python3 pytest
+script: pytest --rootdir=./tests --stepwise --disable-warnings --cov=./base_api_client
