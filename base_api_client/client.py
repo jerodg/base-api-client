@@ -34,6 +34,7 @@ import toml
 from multidict import MultiDict
 
 from .models import Results
+from tenacity import after_log, before_sleep_log, retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
 
 logger = logging.getLogger(__name__)
 
@@ -344,11 +345,11 @@ class BaseApiClient(object):
             while chunk := await f.read(1024):
                 yield chunk
 
-    # @retry(retry=retry_if_exception_type(aio.ClientError),
-    #        wait=wait_random_exponential(multiplier=1.25, min=3, max=60),
-    #        after=after_log(logger, logging.DEBUG),
-    #        stop=stop_after_attempt(5),
-    #        before_sleep=before_sleep_log(logger, logging.WARNING))
+    @retry(retry=retry_if_exception_type(aio.ClientError),
+           wait=wait_random_exponential(multiplier=1.25, min=3, max=60),
+           after=after_log(logger, logging.DEBUG),
+           stop=stop_after_attempt(5),
+           before_sleep=before_sleep_log(logger, logging.WARNING))
     async def request(self, method: str, end_point: str,
                       request_id: Optional[str] = None,
                       data: Optional[Union[dict, aio.FormData]] = None,

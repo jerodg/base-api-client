@@ -5,7 +5,7 @@
 |___/\__,_/__/\___| /_/ \_\_| |___|  \___|_|_\___|_||_\__|
 ```                                                                                                   
 ![Platform: Linux/Mac/Windows](https://img.shields.io/badge/Platform-Linux/Mac/Windows-blue.svg?style=plastic "Platform: Linux/Mac/Windows")
-![Python 3.8.x](https://img.shields.io/badge/Python-3.8.x%2B-blue.svg?style=plastic "Python 3.8.x")
+![Python 3.8.x](https://img.shields.io/badge/Python-3.8%2B-blue.svg?style=plastic "Python 3.8.x")
 <a href="https://www.mongodb.com/licensing/server-side-public-license"><img src="https://img.shields.io/badge/License-SSPL-green.svg?style=plastic"></a>
 ![Build](https://travis-ci.org/jerodg/base-api-client.svg?branch=development?style=plastic "Build")
 ![Coverage 68%](https://img.shields.io/badge/Coverage-68%25-yellow.svg?style=plastic "Coverage 68%")
@@ -26,8 +26,8 @@ from base_api_client import BaseApiClient
 from typing import Optional, Union
 
 class SomeApiClient(BaseApiClient):
-    def __init__(self, cfg: Union[str, dict], sem: Optional[int] = None):
-        BaseApiClient.__init__(self, cfg=cfg, sem=sem or self.SEM)
+    def __init__(self, cfg: Union[str, dict]):
+        BaseApiClient.__init__(self, cfg=cfg)
         
     def __aenter__(self):
         return self
@@ -38,7 +38,7 @@ class SomeApiClient(BaseApiClient):
 
 ## Coverage
 ```shell
------------ coverage: platform linux, python 3.8.0-final-0 -----------
+----------- coverage: platform linux, python 3.8.1-final-0 -----------
 Name                                 Stmts   Miss  Cover
 --------------------------------------------------------
 base_api_client/__init__.py              3      0   100%
