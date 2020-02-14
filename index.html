@@ -38,7 +38,7 @@
         <meta name="lang:search.tokenizer" content="[\s\-]+">
       
       <link rel="shortcut icon" href="assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.0.4, mkdocs-material-4.6.0">
+      <meta name="generator" content="mkdocs-1.0.4, mkdocs-material-4.6.2">
     
     
       
@@ -46,12 +46,12 @@
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/application.1b62728e.css">
+      <link rel="stylesheet" href="assets/stylesheets/application.adb8469c.css">
       
       
     
     
-      <script src="assets/javascripts/modernizr.268332fc.js"></script>
+      <script src="assets/javascripts/modernizr.86422ebf.js"></script>
     
     
       
@@ -83,7 +83,7 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
     
-      <a href="#installation" tabindex="1" class="md-skip">
+      <a href="#installation" tabindex="0" class="md-skip">
         Skip to content
       </a>
     
@@ -92,7 +92,7 @@
   <nav class="md-header-nav md-grid">
     <div class="md-flex">
       <div class="md-flex__cell md-flex__cell--shrink">
-        <a href="https://jerodg.github.io/base-api-client" title="Base API Client" class="md-header-nav__button md-logo">
+        <a href="https://jerodg.github.io/base-api-client" title="Base API Client" aria-label="Base API Client" class="md-header-nav__button md-logo">
           
             <i class="md-icon"></i>
           
@@ -123,7 +123,7 @@
   <label class="md-search__overlay" for="__search"></label>
   <div class="md-search__inner" role="search">
     <form class="md-search__form" name="search">
-      <input type="text" class="md-search__input" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
+      <input type="text" class="md-search__input" aria-label="search" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
       <label class="md-icon md-search__icon" for="__search"></label>
       <button type="reset" class="md-icon md-search__icon" data-md-component="reset" tabindex="-1">
         &#xE5CD;
@@ -257,6 +257,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#coverage" class="md-nav__link">
+    Coverage
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#documentation" class="md-nav__link">
     Documentation
   </a>
@@ -314,6 +321,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#coverage" class="md-nav__link">
+    Coverage
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#documentation" class="md-nav__link">
     Documentation
   </a>
@@ -351,21 +365,23 @@
                 <p><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>1
 2
 3
-4</pre></div></td><td class="code"><div class="highlight"><pre><span></span> ___                   _   ___ ___    ___ _ _         _   
+4</pre></div></td><td class="code"><div class="highlight"><pre><span></span><code> ___                   _   ___ ___    ___ _ _         _   
 | _ ) __ _ ___ ___    /_\ | _ \_ _|  / __| (_)___ _ _| |_ 
 | _ \/ _` (_-&lt;/ -_)  / _ \|  _/| |  | (__| | / -_) &#39; \  _|
 |___/\__,_/__/\___| /_/ \_\_| |___|  \___|_|_\___|_||_\__|
-</pre></div>
+</code></pre></div>
 </td></tr></table>
-<img alt="platform" src="https://img.shields.io/badge/Platform-Linux/Unix/Windows-blue.svg" />
-<img alt="python" src="https://img.shields.io/badge/Python-3.6/7/8%2B-blue.svg" />
-<a href="https://www.mongodb.com/licensing/server-side-public-license"><img src="https://img.shields.io/badge/License-SSPL-green.svg"></a>
-<img alt="0%" src="https://img.shields.io/badge/Coverage-0%25-red.svg" />
-<a href="https://saythanks.io/to/jerodg"><img src="https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg"></a></p>
+<img alt="Platform: Linux/Mac/Windows" src="https://img.shields.io/badge/Platform-Linux/Mac/Windows-blue.svg?style=plastic" title="Platform: Linux/Mac/Windows" />
+<img alt="Python 3.8.x" src="https://img.shields.io/badge/Python-3.8%2B-blue.svg?style=plastic" title="Python 3.8.x" />
+<a href="https://www.mongodb.com/licensing/server-side-public-license"><img src="https://img.shields.io/badge/License-SSPL-green.svg?style=plastic"></a>
+<img alt="Build" src="https://travis-ci.org/jerodg/base-api-client.svg?branch=development?style=plastic" title="Build" />
+<img alt="Coverage 68%" src="https://img.shields.io/badge/Coverage-68%25-yellow.svg?style=plastic" title="Coverage 68%" />
+<a href="https://saythanks.io/to/jerodg"><img src="https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg?style=plastic"></a>
+<a href="https://www.paypal.me/jerodgawne"><img src="https://img.shields.io/badge/Donate-orange.svg?style=plastic"></a></p>
 <p>Base module for REST API clients.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
-<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>1</pre></div></td><td class="code"><div class="highlight"><pre><span></span>pip install base-api-client
-</pre></div>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span>1</pre></div></td><td class="code"><div class="highlight"><pre><span></span><code>pip3 install base-api-client
+</code></pre></div>
 </td></tr></table>
 
 <h2 id="basic-usage">Basic Usage<a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h2>
@@ -381,26 +397,51 @@
  9
 10
 11
-12</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">base_api_client</span> <span class="kn">import</span> <span class="n">BaseApiClient</span>
+12</pre></div></td><td class="code"><div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">base_api_client</span> <span class="kn">import</span> <span class="n">BaseApiClient</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="k">class</span> <span class="nc">SomeApiClient</span><span class="p">(</span><span class="n">BaseApiClient</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">],</span> <span class="n">sem</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-        <span class="n">BaseApiClient</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cfg</span><span class="o">=</span><span class="n">cfg</span><span class="p">,</span> <span class="n">sem</span><span class="o">=</span><span class="n">sem</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">SEM</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]):</span>
+        <span class="n">BaseApiClient</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cfg</span><span class="o">=</span><span class="n">cfg</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__aenter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span>
 
     <span class="k">def</span> <span class="fm">__aexit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
         <span class="k">await</span> <span class="n">BaseApiClient</span><span class="o">.</span><span class="fm">__aexit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">)</span>
-</pre></div>
+</code></pre></div>
+</td></tr></table>
+
+<h2 id="coverage">Coverage<a class="headerlink" href="#coverage" title="Permanent link">&para;</a></h2>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11</pre></div></td><td class="code"><div class="highlight"><pre><span></span><code>----------- coverage: platform linux, python <span class="m">3</span>.8.1-final-0 -----------
+Name                                 Stmts   Miss  Cover
+--------------------------------------------------------
+base_api_client/__init__.py              <span class="m">3</span>      <span class="m">0</span>   <span class="m">100</span>%
+base_api_client/client.py              <span class="m">244</span>     <span class="m">71</span>    <span class="m">71</span>%
+base_api_client/models/__init__.py       <span class="m">3</span>      <span class="m">0</span>   <span class="m">100</span>%
+base_api_client/models/record.py        <span class="m">35</span>     <span class="m">18</span>    <span class="m">49</span>%
+base_api_client/models/results.py       <span class="m">25</span>     <span class="m">11</span>    <span class="m">56</span>%
+base_api_client/utils.py                <span class="m">23</span>      <span class="m">7</span>    <span class="m">70</span>%
+--------------------------------------------------------
+TOTAL                                  <span class="m">333</span>    <span class="m">107</span>    <span class="m">68</span>%
+</code></pre></div>
 </td></tr></table>
 
 <h2 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h2>
 <p><a href="https://jerodg.github.io/base-api-client/">GitHub Pages</a>
 - Work in Process</p>
 <h2 id="license">License<a class="headerlink" href="#license" title="Permanent link">&para;</a></h2>
-<p>Copyright © 2019 Jerod Gawne <a href="https://github.com/jerodg/">https://github.com/jerodg/</a></p>
+<p>Copyright © 2019-2020 Jerod Gawne <a href="https://github.com/jerodg/">https://github.com/jerodg/</a></p>
 <p>This program is free software: you can redistribute it and/or modify
 it under the terms of the Server Side Public License (SSPL) as
 published by MongoDB, Inc., either version 1 of the
@@ -434,13 +475,13 @@ If not, see <a href="https://www.mongodb.com/licensing/server-side-public-licens
       <div class="md-footer-copyright">
         
           <div class="md-footer-copyright__highlight">
-            Copyright © 2019. Jerod Gawne
+            Copyright © 2019-2020. Jerod Gawne
           </div>
         
         powered by
-        <a href="https://www.mkdocs.org">MkDocs</a>
+        <a href="https://www.mkdocs.org" target="_blank" rel="noopener">MkDocs</a>
         and
-        <a href="https://squidfunk.github.io/mkdocs-material/">
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
           Material for MkDocs</a>
       </div>
       
@@ -450,7 +491,7 @@ If not, see <a href="https://www.mongodb.com/licensing/server-side-public-licens
       
     </div>
     
-      <script src="assets/javascripts/application.808e90bb.js"></script>
+      <script src="assets/javascripts/application.c33a9706.js"></script>
       
       <script>app.initialize({version:"1.0.4",url:{base:"."}})</script>
       
