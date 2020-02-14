@@ -16,7 +16,6 @@
 
 #You should have received a copy of the SSPL along with this program.
 #If not, see <https://www.mongodb.com/licensing/server-side-public-license>.
-language: python
 jobs:
   include:
     - name: "Ubuntu 'bionic' 18.04"
@@ -25,34 +24,34 @@ jobs:
     - dist: bionic
     - python: 3.8.1
     - language: python
-    - name: "Ubuntu 'xenial' 16.04"
-    - os: linux
-    - arch: amd64
-    - dist: xenial
-    - python: 3.8.1
-    - language: python
-    - name: "Ubuntu 'trusty' 14.04"
-    - os: linux
-    - arch: amd64
-    - dist: trusty
-    - python: 3.8.1
-    - language: python
-    - name: "Ubuntu 'precise' 12.04"
-    - os: linux
-    - arch: amd64
-    - dist: precise
-    - python: 3.8.1
-    - language: python
-    - name: "Python 3.8.1 on macOS"
-      os: osx
-      osx_image: xcode11.3  # Python 3.7.4 running on macOS 10.14.4
-      language: shell       # 'language: python' is an error on Travis CI macOS
-    - name: "Python 3.8.1 on Windows"
-      os: windows           # Windows 10.0.17134 N/A Build 17134
-      language: shell       # 'language: python' is an error on Travis CI Windows
-      before_install:
-        - choco install python --version 3.8.1
-      env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
+#    - name: "Ubuntu 'xenial' 16.04"
+#    - os: linux
+#    - arch: amd64
+#    - dist: xenial
+#    - python: 3.8.1
+#    - language: python
+#    - name: "Ubuntu 'trusty' 14.04"
+#    - os: linux
+#    - arch: amd64
+#    - dist: trusty
+#    - python: 3.8.1
+#    - language: python
+#    - name: "Ubuntu 'precise' 12.04"
+#    - os: linux
+#    - arch: amd64
+#    - dist: precise
+#    - python: 3.8.1
+#    - language: python
+#    - name: "Python 3.8.1 on macOS"
+#      os: osx
+#      osx_image: xcode11.3  # Python 3.7.4 running on macOS 10.14.4
+#      language: shell       # 'language: python' is an error on Travis CI macOS
+#    - name: "Python 3.8.1 on Windows"
+#      os: windows           # Windows 10.0.17134 N/A Build 17134
+#      language: shell       # 'language: python' is an error on Travis CI Windows
+#      before_install:
+#        - choco install python --version 3.8.1
+#      env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
 install:
   - pip3 install --upgrade pip setuptools  # all three OSes agree about 'pip3'
   - pip3 install -r requirements.txt
