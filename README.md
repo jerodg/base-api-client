@@ -10,6 +10,7 @@
 ![Build](https://travis-ci.org/jerodg/base-api-client.svg?branch=development?style=plastic "Build")
 ![Coverage 68%](https://img.shields.io/badge/Coverage-68%25-yellow.svg?style=plastic "Coverage 68%")
 <a href="https://saythanks.io/to/jerodg"><img src="https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg?style=plastic"></a>
+<a href="https://www.paypal.me/jerodgawne"><img src="https://img.shields.io/badge/Donate-orange.svg?style=plastic "Donate"></a>
 
 Base module for REST API clients.
 
