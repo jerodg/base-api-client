@@ -32,9 +32,9 @@ import aiohttp as aio
 import rapidjson
 import toml
 from multidict import MultiDict
+from tenacity import after_log, before_sleep_log, retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
 
 from .models import Results
-from tenacity import after_log, before_sleep_log, retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
 
 logger = logging.getLogger(__name__)
 
@@ -384,7 +384,7 @@ class BaseApiClient(object):
             data = {**data, 'file': self.file_streamer(file)}
 
         try:
-            base = self.cfg['uri']['base']
+            base = self.cfg['URI']['Base']
         except TypeError:
             base = ''
 
@@ -395,6 +395,14 @@ class BaseApiClient(object):
                                                   proxy=self.proxy,
                                                   proxy_auth=self.proxy_auth,
                                                   params=params)
+            elif method == 'patch':
+                response = await self.session.patch(url=f'{base}{end_point}',
+                                                    ssl=self.ssl,
+                                                    proxy=self.proxy,
+                                                    proxy_auth=self.proxy_auth,
+                                                    data=data,
+                                                    json=json,
+                                                    params=params)
             elif method == 'post':
                 response = await self.session.post(url=f'{base}{end_point}',
                                                    ssl=self.ssl,
