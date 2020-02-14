@@ -32,7 +32,7 @@ async def test_request_debug():
 
     async with BaseApiClient() as bac:
         async with aio.ClientSession() as session:
-            response = await session.get('http://www.google.com', ssl=False)
+            response = await session.get('https://www.google.com', ssl=False)
 
         results = await bac.request_debug(response=response)
 

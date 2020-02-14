@@ -33,7 +33,7 @@ async def test_request_debug():
     async with BaseApiClient() as bac:
         tasks = [asyncio.create_task(bac.request(method='get',
                                                  end_point='http://openlibrary.org/search/lists.json',
-                                                 params={'limit':  20,
+                                                 params={'limit':  5,
                                                          'q':      'book',
                                                          'offset': 0}))]
         results = Results(data=await asyncio.gather(*tasks))
