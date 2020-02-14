@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.8
 """Base API Client
-Copyright © 2019 Jerod Gawne <https://github.com/jerodg/>
+Copyright © 2019-2020 Jerod Gawne <https://github.com/jerodg/>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the Server Side Public License (SSPL) as
@@ -32,7 +32,6 @@ import aiohttp as aio
 import rapidjson
 import toml
 from multidict import MultiDict
-from tenacity import after_log, before_sleep_log, retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
 
 from .models import Results
 
@@ -178,7 +177,7 @@ class BaseApiClient(object):
         try:
             verify_ssl = cfg_data['Options']['VerifySSL']
         except (KeyError, TypeError):
-            verify_ssl = True
+            verify_ssl = False
 
         if ca_key:
             self.ssl = create_default_context(purpose=Purpose.CLIENT_AUTH, capath=ca_key)
@@ -345,11 +344,11 @@ class BaseApiClient(object):
             while chunk := await f.read(1024):
                 yield chunk
 
-    @retry(retry=retry_if_exception_type(aio.ClientError),
-           wait=wait_random_exponential(multiplier=1.25, min=3, max=60),
-           after=after_log(logger, logging.DEBUG),
-           stop=stop_after_attempt(5),
-           before_sleep=before_sleep_log(logger, logging.WARNING))
+    # @retry(retry=retry_if_exception_type(aio.ClientError),
+    #        wait=wait_random_exponential(multiplier=1.25, min=3, max=60),
+    #        after=after_log(logger, logging.DEBUG),
+    #        stop=stop_after_attempt(5),
+    #        before_sleep=before_sleep_log(logger, logging.WARNING))
     async def request(self, method: str, end_point: str,
                       request_id: Optional[str] = None,
                       data: Optional[Union[dict, aio.FormData]] = None,
@@ -383,15 +382,20 @@ class BaseApiClient(object):
         if file:
             data = {**data, 'file': self.file_streamer(file)}
 
+        try:
+            base = self.cfg['uri']['base']
+        except TypeError:
+            base = ''
+
         async with self.sem:
             if method == 'get':
-                response = await self.session.get(url=f'{self.cfg["URI"]["Base"]}{end_point}',
+                response = await self.session.get(url=f'{base}{end_point}',
                                                   ssl=self.ssl,
                                                   proxy=self.proxy,
                                                   proxy_auth=self.proxy_auth,
                                                   params=params)
             elif method == 'post':
-                response = await self.session.post(url=f'{self.cfg["URI"]["Base"]}{end_point}',
+                response = await self.session.post(url=f'{base}{end_point}',
                                                    ssl=self.ssl,
                                                    proxy=self.proxy,
                                                    proxy_auth=self.proxy_auth,
@@ -399,7 +403,7 @@ class BaseApiClient(object):
                                                    json=json,
                                                    params=params)
             elif method == 'put':
-                response = await self.session.put(url=f'{self.cfg["URI"]["Base"]}{end_point}',
+                response = await self.session.put(url=f'{base}{end_point}',
                                                   ssl=self.ssl,
                                                   proxy=self.proxy,
                                                   proxy_auth=self.proxy_auth,
@@ -407,7 +411,7 @@ class BaseApiClient(object):
                                                   json=json,
                                                   params=params)
             elif method == 'delete':
-                response = await self.session.delete(url=f'{self.cfg["URI"]["Base"]}{end_point}',
+                response = await self.session.delete(url=f'{base}{end_point}',
                                                      ssl=self.ssl,
                                                      proxy=self.proxy,
                                                      proxy_auth=self.proxy_auth,

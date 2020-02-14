@@ -1,5 +1,5 @@
 #Base API Client: Travis Configuration
-#Copyright © 2019 Jerod Gawne <https://github.com/jerodg/>
+#Copyright © 2019-2020 Jerod Gawne <https://github.com/jerodg/>
 
 #This program is free software: you can redistribute it and/or modify
 #it under the terms of the Server Side Public License (SSPL) as
@@ -32,7 +32,9 @@ jobs:
         - choco install python --version 3.8.0
         - python -m pip install --upgrade pip
       env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
-install: pip3 install --upgrade pip  # all three OSes agree about 'pip3'
+install:
+  - pip3 install --upgrade pip setuptools  # all three OSes agree about 'pip3'
+  - pip3 install -r requirements.txt
 # 'python' points to Python 2.7 on macOS but points to Python 3.8 on Linux and Windows
 # 'python3' is a 'command not found' error on Windows but 'py' works on Windows only
 script: pytest --rootdir=./tests --stepwise --disable-warnings --cov=./base_api_client

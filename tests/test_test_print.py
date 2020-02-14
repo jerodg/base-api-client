@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.8
 """Base API Client: Test Test Print
-Copyright © 2019 Jerod Gawne <https://github.com/jerodg/>
+Copyright © 2019-2020 Jerod Gawne <https://github.com/jerodg/>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the Server Side Public License (SSPL) as
@@ -19,7 +19,6 @@ You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 import asyncio
 import time
-from os.path import realpath
 
 import pytest
 
@@ -31,9 +30,9 @@ from base_api_client.models import Results
 async def test_request_debug():
     ts = time.perf_counter()
 
-    async with BaseApiClient(cfg=realpath('./tests/data/process_results_config.toml')) as bac:
+    async with BaseApiClient() as bac:
         tasks = [asyncio.create_task(bac.request(method='get',
-                                                 end_point='/search/lists.json',
+                                                 end_point='http://openlibrary.org/search/lists.json',
                                                  params={'limit':  20,
                                                          'q':      'book',
                                                          'offset': 0}))]
