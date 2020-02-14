@@ -1,5 +1,5 @@
-#Bricata API Client: tox.ini
-#Copyright © 2019 Jerod Gawne <https://github.com/jerodg/>
+#Base API Client: Travis Configuration
+#Copyright © 2019-2020 Jerod Gawne <https://github.com/jerodg/>
 
 #This program is free software: you can redistribute it and/or modify
 #it under the terms of the Server Side Public License (SSPL) as
@@ -17,52 +17,29 @@
 #You should have received a copy of the SSPL along with this program.
 #If not, see <https://www.mongodb.com/licensing/server-side-public-license>.
 language: python            # this works for Linux but is an error on macOS or Windows
-
-matrix:
+jobs:
   include:
-    - name: "Python 3.7.x on Xenial Linux"
-      python: 3.7           # this works for Linux but is ignored on macOS or Windows
-      dist: xenial          # required for Python >= 3.7
-      before_install:
-        - python -m pip install --upgrade pip pipenv
+    - name: "Python 3.8.1 on Xenial Linux"
+      python: 3.8.1           # this works for Linux but is ignored on macOS or Windows
 
-    - name: "Python 3.7.x on macOS"
-      os: osx
-      osx_image: xcode10.2  # Python 3.7.2 running on macOS 10.14.3
-      language: shell       # 'language: python' is an error on Travis CI macOS
-      before_install:
-        - python -m pip install --upgrade pip pipenv
+#    - name: "Python 3.8.1 on macOS"
+#      os: osx
+#      osx_image: xcode11.3  # Python 3.7.4 running on macOS 10.14.4
+#      language: shell       # 'language: python' is an error on Travis CI macOS
+#      before_install:
+#        - /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+#        - brew install python@3.8
 
-    - name: "Python 3.7.x on Windows"
+    - name: "Python 3.8.1 on Windows"
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
-        - choco install python
-        - python -m pip install --upgrade pip pipenv
-      env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
-
-install: pipenv install --dev  # all three OSes agree about 'pip3'
-# 'python' points to Python 2.7 on macOS but points to Python 3.7 on Linux and Windows
+        - choco install python --version 3.8.1
+        - python -m pip install --upgrade pip
+      env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
+install:
+  - pip3 install --upgrade pip setuptools  # all three OSes agree about 'pip3'
+  - pip3 install -r requirements.txt
+# 'python' points to Python 2.7 on macOS but points to Python 3.8 on Linux and Windows
 # 'python3' is a 'command not found' error on Windows but 'py' works on Windows only
-
-script: pytest
-
-
-
-
-#language: python
-#matrix:
-#  include:
-#    - dist: xenial  # required for Python >= 3.7
-#    - python:
-#        "3.7"
-#        "3.8-dev"
-#
-#install:
-#  - pip install pipenv
-#  - pipenv install --dev
-#
-#script: pytest
-#
-#notifications:
-#  email: false
+script: pytest --rootdir=./tests --stepwise --disable-warnings --cov=./base_api_client

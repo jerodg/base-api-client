@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.8
 """Base API Client: Models.Record
-Copyright © 2019 Jerod Gawne <https://github.com/jerodg/>
+Copyright © 2019-2020 Jerod Gawne <https://github.com/jerodg/>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the Server Side Public License (SSPL) as
@@ -17,17 +17,15 @@ copies or substantial portions of the Software.
 
 You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
-
 import logging
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, List, Optional
-
-from copy import deepcopy
 
 logger = logging.getLogger(__name__)
 
 
-def sort_dict(dct: dict, reverse: Optional[bool] = False):
+def sort_dict(dct: dict, reverse: Optional[bool] = False) -> dict:
     """Sort a dictionary, recursively, by keys.
 
     Args:

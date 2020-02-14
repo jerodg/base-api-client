@@ -4,18 +4,19 @@
 | _ \/ _` (_-</ -_)  / _ \|  _/| |  | (__| | / -_) ' \  _|
 |___/\__,_/__/\___| /_/ \_\_| |___|  \___|_|_\___|_||_\__|
 ```                                                                                                   
-![platform](https://img.shields.io/badge/Platform-Linux/Unix/Windows-blue.svg)
-![python](https://img.shields.io/badge/Python-3.6/7/8%2B-blue.svg)
-<a href="https://www.mongodb.com/licensing/server-side-public-license"><img src="https://img.shields.io/badge/License-SSPL-green.svg"></a>
-![0%](https://img.shields.io/badge/Coverage-0%25-red.svg)
-<a href="https://saythanks.io/to/jerodg"><img src="https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg"></a>
-
+![Platform: Linux/Mac/Windows](https://img.shields.io/badge/Platform-Linux/Mac/Windows-blue.svg?style=plastic "Platform: Linux/Mac/Windows")
+![Python 3.8.x](https://img.shields.io/badge/Python-3.8%2B-blue.svg?style=plastic "Python 3.8.x")
+<a href="https://www.mongodb.com/licensing/server-side-public-license"><img src="https://img.shields.io/badge/License-SSPL-green.svg?style=plastic"></a>
+![Build](https://travis-ci.org/jerodg/base-api-client.svg?branch=development?style=plastic "Build")
+![Coverage 68%](https://img.shields.io/badge/Coverage-68%25-yellow.svg?style=plastic "Coverage 68%")
+<a href="https://saythanks.io/to/jerodg"><img src="https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg?style=plastic"></a>
+<a href="https://www.paypal.me/jerodgawne"><img src="https://img.shields.io/badge/Donate-orange.svg?style=plastic"></a>
 
 Base module for REST API clients.
 
 ## Installation
 ```bash
-pip install base-api-client
+pip3 install base-api-client
 ```
 
 ## Basic Usage
@@ -26,8 +27,8 @@ from base_api_client import BaseApiClient
 from typing import Optional, Union
 
 class SomeApiClient(BaseApiClient):
-    def __init__(self, cfg: Union[str, dict], sem: Optional[int] = None):
-        BaseApiClient.__init__(self, cfg=cfg, sem=sem or self.SEM)
+    def __init__(self, cfg: Union[str, dict]):
+        BaseApiClient.__init__(self, cfg=cfg)
         
     def __aenter__(self):
         return self
@@ -36,13 +37,28 @@ class SomeApiClient(BaseApiClient):
         await BaseApiClient.__aexit__(self, exc_type, exc_val, exc_tb)
 ```
 
+## Coverage
+```shell
+----------- coverage: platform linux, python 3.8.1-final-0 -----------
+Name                                 Stmts   Miss  Cover
+--------------------------------------------------------
+base_api_client/__init__.py              3      0   100%
+base_api_client/client.py              244     71    71%
+base_api_client/models/__init__.py       3      0   100%
+base_api_client/models/record.py        35     18    49%
+base_api_client/models/results.py       25     11    56%
+base_api_client/utils.py                23      7    70%
+--------------------------------------------------------
+TOTAL                                  333    107    68%
+```
+
 ## Documentation
 [GitHub Pages](https://jerodg.github.io/base-api-client/)
 - Work in Process
 
 ## License
 
-Copyright © 2019 Jerod Gawne <https://github.com/jerodg/>
+Copyright © 2019-2020 Jerod Gawne <https://github.com/jerodg/>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the Server Side Public License (SSPL) as

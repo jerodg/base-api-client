@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.8
 """Base API Client: Tests Init
-Copyright © 2019 Jerod Gawne <https://github.com/jerodg/>
+Copyright © 2019-2020 Jerod Gawne <https://github.com/jerodg/>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the Server Side Public License (SSPL) as
@@ -17,5 +17,3 @@ copies or substantial portions of the Software.
 
 You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
-
-from tests import *

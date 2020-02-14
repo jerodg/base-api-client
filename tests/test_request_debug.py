@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.8
 """Base API Client: Test Request Debug
-Copyright © 2019 Jerod Gawne <https://github.com/jerodg/>
+Copyright © 2019-2020 Jerod Gawne <https://github.com/jerodg/>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the Server Side Public License (SSPL) as
@@ -21,22 +21,20 @@ import time
 
 import aiohttp as aio
 import pytest
-from os import getenv
 
 from base_api_client import BaseApiClient, bprint
 
 
-# todo: use autodidact test endpoint to test, rewrite to handle changes to function
 @pytest.mark.asyncio
 async def test_request_debug():
     ts = time.perf_counter()
     bprint('Test: Request Debug')
 
-    async with BaseApiClient() as bapi:
+    async with BaseApiClient() as bac:
         async with aio.ClientSession() as session:
-            response = await session.get('https://pypi.org', proxy=getenv('PROXY'))
+            response = await session.get('https://www.google.com', ssl=False)
 
-        results = await bapi.request_debug(response=response)
+        results = await bac.request_debug(response=response)
 
         assert type(results) is str
 
