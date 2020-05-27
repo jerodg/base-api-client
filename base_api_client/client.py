@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.8
+#!/usr/bin/aenv python3.8
 """Base API Client
 Copyright © 2019-2020 Jerod Gawne <https://github.com/jerodg/>
 
