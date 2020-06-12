@@ -40,6 +40,7 @@ logger = logging.getLogger(__name__)
 
 
 class BaseApiClient(object):
+    """ Base API Client """
     HDR: dict = {'Content-Type': 'application/json; charset=utf-8'}
     SEM: int = 15  # This defines the number of parallel requests to make.
 
@@ -130,7 +131,14 @@ class BaseApiClient(object):
 
         return cfg
 
-    def process_config(self, cfg_data: dict):
+    def process_config(self, cfg_data: dict) -> NoReturn:
+        """Process Configuration
+
+        Args:
+            cfg_data (dict):
+
+        Returns:
+            N/A (NoReturn)"""
         try:
             if cfg_data['Options']['Debug']:
                 self.debug = True
@@ -186,6 +194,13 @@ class BaseApiClient(object):
             self.ssl = verify_ssl
 
     def session_config(self, cfg: dict) -> NoReturn:
+        """Session Configuration
+
+        Args:
+            cfg (dict):
+
+        Returns:
+            N/A (NoReturn)"""
         # Auth
         try:
             username = cfg['Auth']['Username']
@@ -244,6 +259,13 @@ class BaseApiClient(object):
 
     @staticmethod
     async def request_debug(response: aio.ClientResponse) -> str:
+        """
+
+        Args:
+            response (aio.ClientResponse):
+
+        Returns:
+            (str)"""
         hdr = '\n\t\t'.join(f'{k}: {v}' for k, v in response.headers.items())
         try:
             j = rapidjson.dumps(await response.json(content_type=None), ensure_ascii=False)
@@ -340,7 +362,17 @@ class BaseApiClient(object):
         return results
 
     @staticmethod
-    async def file_streamer(file_path):
+    async def file_streamer(file_path: str) -> bytes:
+        """File Streamer
+
+        Streams a file from disk.
+
+        Args:
+            file_path (str):
+
+        Returns:
+            chunk (bytes)"""
+
         async with aiofiles.open(realpath(file_path), 'rb') as f:
             while chunk := await f.read(1024):
                 yield chunk
@@ -375,8 +407,7 @@ class BaseApiClient(object):
             NotImplementedError
 
         Returns:
-            dict
-        """
+            (dict)"""
         if not request_id:
             request_id = uuid4().hex
 
