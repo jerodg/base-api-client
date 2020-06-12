@@ -16,13 +16,6 @@
           </excludedPaths>
         </serverdata>
       </paths>
-      <paths name="infosecintegration@slflokydcaims01.info53.com:22 key (1)">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/opt/sea/base-api-client" local="$PROJECT_DIR$" />
-          </mappings>
-        </serverdata>
-      </paths>
     </serverData>
     <option name="myAutoUpload" value="ALWAYS" />
   </component>

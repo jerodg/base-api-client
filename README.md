@@ -1,9 +1,9 @@
 ```
- ___                   _   ___ ___    ___ _ _         _   
-| _ ) __ _ ___ ___    /_\ | _ \_ _|  / __| (_)___ _ _| |_ 
+ ___                   _   ___ ___    ___ _ _         _
+| _ ) __ _ ___ ___    /_\ | _ \_ _|  / __| (_)___ _ _| |_
 | _ \/ _` (_-</ -_)  / _ \|  _/| |  | (__| | / -_) ' \  _|
 |___/\__,_/__/\___| /_/ \_\_| |___|  \___|_|_\___|_||_\__|
-```                                                                                                   
+```
 ![Platform: Linux/Mac/Windows](https://img.shields.io/badge/Platform-Linux/Mac/Windows-blue.svg?style=plastic "Platform: Linux/Mac/Windows")
 ![Python 3.8.x](https://img.shields.io/badge/Python-3.8%2B-blue.svg?style=plastic "Python 3.8.x")
 <a href="https://www.mongodb.com/licensing/server-side-public-license"><img src="https://img.shields.io/badge/License-SSPL-green.svg?style=plastic"></a>
@@ -24,12 +24,13 @@ This modules' primary use-case is inheritance from other REST API clients.
 
 ```python
 from base_api_client import BaseApiClient
-from typing import Optional, Union
+from typing import Union
+
 
 class SomeApiClient(BaseApiClient):
     def __init__(self, cfg: Union[str, dict]):
         BaseApiClient.__init__(self, cfg=cfg)
-        
+
     def __aenter__(self):
         return self
 
