@@ -1,1 +1,2 @@
+include *.adoc
 include *.md
