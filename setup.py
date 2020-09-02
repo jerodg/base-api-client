@@ -16,6 +16,7 @@ You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 import logging
 import sys
+from os.path import realpath
 from typing import NoReturn
 
 from setuptools import find_packages, setup
@@ -24,12 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 def readme() -> str:
-    with open('README.adoc') as f:
-        return f.read()
-
-
-def license() -> str:
-    with open('LICENSE.adoc') as f:
+    with open(realpath('./README.md')) as f:
         return f.read()
 
 
@@ -61,7 +57,7 @@ def main() -> NoReturn:
                             'tenacity',
                             'toml'],
           keywords='base api client rest',
-          license=license(),
+          license='Server Side Public License',
           long_description_content_type='text/markdown',
           long_description=readme(),
           name='base-api-client',
@@ -82,7 +78,7 @@ def main() -> NoReturn:
                           'toml'] + ['pytest-runner'] if {'pytest', 'test', 'ptr'}.intersection(sys.argv) else [],
           tests_require=['pytest', 'pytest-asyncio'],
           url='https://pypi.org/project/base-api-client/',
-          version='0!0.12.3',
+          version='0!0.12.5',
           zip_safe=True)
 
 

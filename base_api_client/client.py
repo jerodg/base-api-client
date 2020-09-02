@@ -322,8 +322,12 @@ class BaseApiClient(object):
                 else:
                     logger.error(f'Content-Type: {result["response"].headers["Content-Type"]}, not currently handled.')
                     raise NotImplementedError
-            except KeyError as ke:  # This shouldn't happen too often.
+            except KeyError as ke:  # fixme: (improve this note) This shouldn't happen too often.
                 logger.warning(ke)
+                response = {'text_plain': await result['response'].text(encoding='utf-8')}
+
+            # This is for when the 'Content-Type' is specified as JSON but is actually returned as a string by the API.
+            if type(response) == str:
                 response = {'text_plain': await result['response'].text(encoding='utf-8')}
 
             if 200 <= status <= 299:
