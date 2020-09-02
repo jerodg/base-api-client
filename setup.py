@@ -16,6 +16,7 @@ You should have received a copy of the SSPL along with this program.
 If not, see <https://www.mongodb.com/licensing/server-side-public-license>."""
 import logging
 import sys
+from os.path import realpath
 from typing import NoReturn
 
 from setuptools import find_packages, setup
@@ -24,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 def readme() -> str:
-    with open('README.md') as f:
+    with open(realpath('./README.md')) as f:
         return f.read()
 
 
@@ -49,13 +50,14 @@ def main() -> NoReturn:
           entry_points={'console_scripts': []},
           include_package_data=True,
           install_requires=['aiodns',
+                            'aiofiles',
                             'aiohttp',
                             'cchardet',
                             'python-rapidjson',
                             'tenacity',
                             'toml'],
           keywords='base api client rest',
-          license='Server Side Public License (SSPL)',
+          license='Server Side Public License',
           long_description_content_type='text/markdown',
           long_description=readme(),
           name='base-api-client',
@@ -66,8 +68,9 @@ def main() -> NoReturn:
                         'Funding':       'https://www.paypal.me/jerodgawne',
                         'Say Thanks!':   'https://saythanks.io/to/jerodg',
                         'Source':        'https://github.com/jerodg/base-api-client'},
-          python_requires='>=3.8, <3.9',
+          python_requires='>=3.8, <=3.9',
           setup_requires=['aiodns',
+                          'aiofiles',
                           'aiohttp',
                           'cchardet',
                           'python-rapidjson',
@@ -75,7 +78,7 @@ def main() -> NoReturn:
                           'toml'] + ['pytest-runner'] if {'pytest', 'test', 'ptr'}.intersection(sys.argv) else [],
           tests_require=['pytest', 'pytest-asyncio'],
           url='https://pypi.org/project/base-api-client/',
-          version='0!0.12.0',
+          version='0!0.12.5',
           zip_safe=True)
 
 

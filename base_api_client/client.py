@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.8
+#!/usr/bin/aenv python3.8
 """Base API Client
 Copyright © 2019-2020 Jerod Gawne <https://github.com/jerodg/>
 
@@ -32,14 +32,15 @@ import aiohttp as aio
 import rapidjson
 import toml
 from multidict import MultiDict
+from tenacity import after_log, before_sleep_log, retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
 
 from .models import Results
-from tenacity import after_log, before_sleep_log, retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
 
 logger = logging.getLogger(__name__)
 
 
 class BaseApiClient(object):
+    """ Base API Client """
     HDR: dict = {'Content-Type': 'application/json; charset=utf-8'}
     SEM: int = 15  # This defines the number of parallel requests to make.
 
@@ -130,7 +131,14 @@ class BaseApiClient(object):
 
         return cfg
 
-    def process_config(self, cfg_data: dict):
+    def process_config(self, cfg_data: dict) -> NoReturn:
+        """Process Configuration
+
+        Args:
+            cfg_data (dict):
+
+        Returns:
+            N/A (NoReturn)"""
         try:
             if cfg_data['Options']['Debug']:
                 self.debug = True
@@ -186,6 +194,13 @@ class BaseApiClient(object):
             self.ssl = verify_ssl
 
     def session_config(self, cfg: dict) -> NoReturn:
+        """Session Configuration
+
+        Args:
+            cfg (dict):
+
+        Returns:
+            N/A (NoReturn)"""
         # Auth
         try:
             username = cfg['Auth']['Username']
@@ -244,6 +259,13 @@ class BaseApiClient(object):
 
     @staticmethod
     async def request_debug(response: aio.ClientResponse) -> str:
+        """
+
+        Args:
+            response (aio.ClientResponse):
+
+        Returns:
+            (str)"""
         hdr = '\n\t\t'.join(f'{k}: {v}' for k, v in response.headers.items())
         try:
             j = rapidjson.dumps(await response.json(content_type=None), ensure_ascii=False)
@@ -300,8 +322,12 @@ class BaseApiClient(object):
                 else:
                     logger.error(f'Content-Type: {result["response"].headers["Content-Type"]}, not currently handled.')
                     raise NotImplementedError
-            except KeyError as ke:  # This shouldn't happen too often.
+            except KeyError as ke:  # fixme: (improve this note) This shouldn't happen too often.
                 logger.warning(ke)
+                response = {'text_plain': await result['response'].text(encoding='utf-8')}
+
+            # This is for when the 'Content-Type' is specified as JSON but is actually returned as a string by the API.
+            if type(response) == str:
                 response = {'text_plain': await result['response'].text(encoding='utf-8')}
 
             if 200 <= status <= 299:
@@ -340,7 +366,17 @@ class BaseApiClient(object):
         return results
 
     @staticmethod
-    async def file_streamer(file_path):
+    async def file_streamer(file_path: str) -> bytes:
+        """File Streamer
+
+        Streams a file from disk.
+
+        Args:
+            file_path (str):
+
+        Returns:
+            chunk (bytes)"""
+
         async with aiofiles.open(realpath(file_path), 'rb') as f:
             while chunk := await f.read(1024):
                 yield chunk
@@ -375,8 +411,7 @@ class BaseApiClient(object):
             NotImplementedError
 
         Returns:
-            dict
-        """
+            (dict)"""
         if not request_id:
             request_id = uuid4().hex
 
@@ -384,7 +419,7 @@ class BaseApiClient(object):
             data = {**data, 'file': self.file_streamer(file)}
 
         try:
-            base = self.cfg['uri']['base']
+            base = self.cfg['URI']['Base']
         except TypeError:
             base = ''
 
@@ -395,6 +430,14 @@ class BaseApiClient(object):
                                                   proxy=self.proxy,
                                                   proxy_auth=self.proxy_auth,
                                                   params=params)
+            elif method == 'patch':
+                response = await self.session.patch(url=f'{base}{end_point}',
+                                                    ssl=self.ssl,
+                                                    proxy=self.proxy,
+                                                    proxy_auth=self.proxy_auth,
+                                                    data=data,
+                                                    json=json,
+                                                    params=params)
             elif method == 'post':
                 response = await self.session.post(url=f'{base}{end_point}',
                                                    ssl=self.ssl,

@@ -26,12 +26,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Results:
-    """Results from aio.ClientRequest(s)
-
-    Attributes:
-        data (List[dict]):
-        success (List[dict]):
-        failure (List[dict]):"""
+    """Results from aio.ClientRequest(s)"""
     data: List[dict]
     success: List[dict] = field(default_factory=list)
     failure: List[dict] = field(default_factory=list)
@@ -40,7 +35,7 @@ class Results:
     def dict(self) -> dict:
         return {'success': self.success, 'failure': self.failure}
 
-    def cleanup(self, sort_order: str = 'asc', cleanup: bool = True, keep_request_id: bool = False):
+    def cleanup(self, sort_order: str = 'asc', keep_request_id: bool = False):
         success = []
         for rec in self.success:
             if not keep_request_id:
